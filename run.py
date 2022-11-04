@@ -72,12 +72,12 @@ def main():
                 for i in range(0, len(sensor_actors)):
                     s_name, s_frame  = sensor_queue.get(block=True, timeout=1.0)
                     print("    Frame: %d   Sensor: %s" % (s_frame, s_name))
-
+                
             except Empty:
                 print("Some of the sensor information is missed")
                 # Tick the server
-            
             counter += 1
+            
             
     finally:
         world.apply_settings(original_settings)
