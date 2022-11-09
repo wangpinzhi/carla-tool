@@ -1,0 +1,3 @@
+[submodule "fisheye-pano-pro-trans"]
+	path = fisheye-pano-pro-trans
+	url = https://ghproxy.com/https://github.com/AndyLiming/fisheye-pano-pro-trans.git
