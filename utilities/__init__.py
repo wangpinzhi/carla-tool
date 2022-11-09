@@ -1,5 +1,6 @@
 from utilities.pinhole_camera import get_pinhole_camera_rgb
 from utilities.cubemap_camera import get_cubemap_camera_rgb, get_cubemap_camera_depth
+from utilities.fisheyeCubemap import Cubemap2Fisheye
 import json
 import argparse
 import os
