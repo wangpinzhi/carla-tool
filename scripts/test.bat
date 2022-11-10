@@ -1,1 +1,0 @@
-python tools/sim_run.py  --frames 10 --fixed_delta_time 0.09 
