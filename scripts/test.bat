@@ -1,2 +1,1 @@
-python scripts/run.py   --frames 5
-                --fixed_delta_time 0.05
+python tools/sim_run.py  --frames 10 --fixed_delta_time 0.09 

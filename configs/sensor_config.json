@@ -2,8 +2,8 @@
     "cubemap_rgb":[
         {
             "name" : "cm_rgb1",
-            "location_x":0.5,
-            "location_y":-0.5,
+            "location_x":0.25,
+            "location_y":-0.25,
             "location_z":2,
             "image_height":1024,
             "image_width":1024,
@@ -12,8 +12,8 @@
         },
         {
             "name" : "cm_rgb2",
-            "location_x":0.5,
-            "location_y":0.5,
+            "location_x":0.25,
+            "location_y":0.25,
             "location_z":2,
             "image_height":1024,
             "image_width":1024,
@@ -22,8 +22,8 @@
         },
         {
             "name" : "cm_rgb3",
-            "location_x":-0.5,
-            "location_y":-0.5,
+            "location_x":-0.25,
+            "location_y":-0.25,
             "location_z":2,
             "image_height":1024,
             "image_width":1024,
@@ -32,8 +32,8 @@
         },
         {
             "name" : "cm_rgb4",
-            "location_x":-0.5,
-            "location_y":0.5,
+            "location_x":-0.25,
+            "location_y":0.25,
             "location_z":2,
             "image_height":1024,
             "image_width":1024,
@@ -45,8 +45,8 @@
     "cubemap_depth":[
         {
             "name" : "cm_depth1",
-            "location_x":0.5,
-            "location_y":-0.5,
+            "location_x":0.25,
+            "location_y":-0.25,
             "location_z":2,
             "image_height":1024,
             "image_width":1024,
@@ -58,8 +58,8 @@
     "pinhole_rgb":[
         {
             "name" : "ph_rgb1",
-            "location_x":0.5,
-            "location_y":-0.1,
+            "location_x":0.25,
+            "location_y":-0.05,
             "location_z":2,
             "rotation_pitch":0,
             "rotation_yaw":0,
@@ -71,8 +71,8 @@
         },
         {
             "name" : "ph_rgb2",
-            "location_x":0.5,
-            "location_y":0.1,
+            "location_x":0.25,
+            "location_y":0.05,
             "location_z":2,
             "rotation_pitch":0,
             "rotation_yaw":0,
@@ -84,8 +84,8 @@
         },
         {
             "name" : "ph_rgb3",
-            "location_x":-0.5,
-            "location_y":-0.1,
+            "location_x":-0.25,
+            "location_y":-0.05,
             "location_z":2,
             "rotation_pitch":0,
             "rotation_yaw":180,
@@ -97,8 +97,8 @@
         },
         {
             "name" : "ph_rgb4",
-            "location_x":-0.5,
-            "location_y":0.1,
+            "location_x":-0.25,
+            "location_y":0.05,
             "location_z":2,
             "rotation_pitch":0,
             "rotation_yaw":180,
@@ -111,7 +111,7 @@
         {
             "name" : "ph_rgb5",
             "location_x":0,
-            "location_y":0.5,
+            "location_y":0.25,
             "location_z":2,
             "rotation_pitch":0,
             "rotation_yaw":90,
@@ -124,7 +124,7 @@
         {
             "name" : "ph_rgb6",
             "location_x":0,
-            "location_y":-0.5,
+            "location_y":-0.25,
             "location_z":2,
             "rotation_pitch":0,
             "rotation_yaw":-90,
