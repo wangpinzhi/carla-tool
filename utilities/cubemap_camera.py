@@ -49,6 +49,7 @@ def get_cubemap_camera_depth(world, target_vehicle, sensor_queue, settings:list,
             carla.Transform(carla.Location(x=cur_setting['location_x'],y=cur_setting['location_y'],z=cur_setting['location_z']),
                             carla.Rotation(pitch=rotation_pitch,yaw=rotation_yaw,roll=rotation_roll)
             ), attach_to=target_vehicle)
+            
 
             actor.listen(lambda data, s_name=cur_setting["name"], s_view=view: cubemap_data_callback(data, sensor_queue, s_name, s_view, save_data_path))
             actors.append(actor)

@@ -1,4 +1,5 @@
 old_version/
 output_data/
 output_fisheye/
+output_raw_data/
 tools/generate_traffic.py

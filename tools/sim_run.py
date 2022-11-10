@@ -16,7 +16,7 @@ def main():
     # 创建client
     client = carla.Client(args.server_ip, args.server_port)
     client.set_timeout(10.0)
-    
+
     # 连接world
     world = client.get_world()
     if args.reload_map:
@@ -24,11 +24,12 @@ def main():
 
     # Actotr列表
     actor_list=[]
-
+    random.seed(5)
     try:
         
         original_settings = world.get_settings()
         settings = world.get_settings()
+        settings.actor_active_distance = 2000
         settings.synchronous_mode = args.sync_mode # Enables synchronous mode
         synchronous_master = True
         settings.fixed_delta_seconds = args.fixed_delta_time
@@ -40,19 +41,26 @@ def main():
         # 获取world蓝图
         blueprint_library = world.get_blueprint_library()
 
-        # 设置ego_vehicle
-        transform_vehicle = random.choice(world.get_map().get_spawn_points())
-        ego_bp = blueprint_library.find("vehicle.audi.tt")
-        ego_vehicle = world.spawn_actor(ego_bp, transform_vehicle)
-        ego_vehicle.set_autopilot(True, args.traffic_manager_port)
-        actor_list.append(ego_vehicle)
-        
         # Traffic Manager
         traffic_manager = client.get_trafficmanager(args.traffic_manager_port)
         traffic_manager.set_synchronous_mode(args.sync_mode)
+        traffic_manager.set_random_device_seed(54)
+        traffic_manager.set_hybrid_physics_mode(True)
+        traffic_manager.set_hybrid_physics_radius(70.0)
+        traffic_manager.set_respawn_dormant_vehicles(True)
+        traffic_manager.set_boundaries_respawn_dormant_vehicles(25,700)
+
+        # 设置ego_vehicle
+        transform_vehicle = random.choice(world.get_map().get_spawn_points())
+        ego_bp = blueprint_library.find("vehicle.audi.tt")
+        ego_bp.set_attribute('role_name', 'hero')
+        ego_vehicle = world.spawn_actor(ego_bp, transform_vehicle)
         traffic_manager.ignore_lights_percentage(ego_vehicle, 100) # ignore traffic lights percentage
-        traffic_manager.set_random_device_seed(0)
-        random.seed(0)
+        ego_vehicle.set_autopilot(True, args.traffic_manager_port)
+        actor_list.append(ego_vehicle)
+        
+        
+        
         
         # Sensor 队列
         sensor_queue = Queue(maxsize=-1)
@@ -109,7 +117,8 @@ def main():
             else:
                 vehicles_list.append(response.actor_id)
 
-
+        
+        write_strs = ['|  Frame   |   Loc_x |   Loc_y   |   Loc_z   |']
         while True and counter < args.frames:
             
             # Tick the server
@@ -118,19 +127,36 @@ def main():
             # 将CARLA界面摄像头跟随ego_vehicle动
             loc = ego_vehicle.get_transform().location
             spectator.set_transform(carla.Transform(carla.Location(x=loc.x,y=loc.y,z=35),carla.Rotation(yaw=0,pitch=-90,roll=0)))
-
             # 处理传感器数据
             try:
+
+                save_queue = Queue()
+                cur_frame = None
+                cur_loc = None
                 for i in range(0, len(sensor_actors)):
-                    s_name, s_frame  = sensor_queue.get(block=True, timeout=1.0)
-                    print("    Frame: %d   Sensor: %s" % (s_frame, s_name))
-                
+                    s_name, s_frame, s_data  = sensor_queue.get(block=True, timeout=1.0)
+                    if 'ph' in s_name:
+                        save_queue.put((os.path.join(args.save_data_path,'pinhole','{}_{}_{}.png'.format(s_name, s_data.frame, s_data.timestamp)),s_data,carla.ColorConverter.Raw))
+                    elif 'cm' in s_name:
+                        if 'depth' in s_name:
+                            save_queue.put((os.path.join(args.save_data_path,'cubemap','{}_{}_{}.png'.format(s_name,s_data.frame,s_data.timestamp)),s_data,carla.ColorConverter.Depth))
+                            cur_frame = s_frame
+                            cur_loc = s_data.transform.location
+                        elif 'rgb' in s_name:
+                            save_queue.put((os.path.join(args.save_data_path,'cubemap','{}_{}_{}.png'.format(s_name,s_data.frame,s_data.timestamp)),s_data,carla.ColorConverter.Raw))  
+                    
+                print(f'INFO: [{counter+1}]/[{args.frames}]')
+                write_strs.append(f'\n|    {cur_frame}  |   {cur_loc.x}  |   {cur_loc.y}  |   {cur_loc.z}  ')
+                counter += 1
+
+                while not save_queue.empty():
+                    path, data, converter= save_queue.get(block=True, timeout=1.0)
+                    data.save_to_disk(path,color_converter=converter)
+
             except Empty:
-                print("Some of the sensor information is missed")
-                # Tick the server
-            counter += 1
-            
-            
+                print("Some of the sensor information is missed!")
+                # Tick the server     
+    
     finally:
         world.apply_settings(original_settings)
         
@@ -141,6 +167,9 @@ def main():
         for actor in actor_list:
             actor.destroy()
         print("\nbasic actors cleaned up!!!")
+        
+        with open(os.path.join(args.save_data_path,'external.txt'),'a') as f:
+            f.writelines(write_strs)
 
 
 if __name__ == '__main__':
