@@ -52,7 +52,7 @@ def main():
 
         # 设置ego_vehicle
         transform_vehicle = random.choice(world.get_map().get_spawn_points())
-        ego_bp = blueprint_library.find("vehicle.audi.tt")
+        ego_bp = blueprint_library.find("vehicle.audi.invisiable") # 设置audi.tt为invisiable
         ego_bp.set_attribute('role_name', 'hero')
         ego_vehicle = world.spawn_actor(ego_bp, transform_vehicle)
         traffic_manager.ignore_lights_percentage(ego_vehicle, 100) # ignore traffic lights percentage
@@ -77,6 +77,9 @@ def main():
         npc_blueprints_vehicle = sorted(npc_blueprints_vehicle, key=lambda bp: bp.id)
         # npc_blueprints_walker = get_actor_blueprints(world, args.filterw, args.generationw)
         
+         # filter invisiable car
+        npc_blueprints_vehicle = [x for x in npc_blueprints_vehicle if not x.id.endswith('invisiable')]
+
         npc_spawn_points = world.get_map().get_spawn_points()
         number_of_spawn_points = len(npc_spawn_points)
 
@@ -99,6 +102,7 @@ def main():
             if n >= args.number_of_vehicles:
                 break
             blueprint = random.choice(npc_blueprints_vehicle)
+
             if blueprint.has_attribute('color'):
                 color = random.choice(blueprint.get_attribute('color').recommended_values)
                 blueprint.set_attribute('color', color)
@@ -118,7 +122,7 @@ def main():
                 vehicles_list.append(response.actor_id)
 
         
-        write_strs = ['|  Frame   |   Loc_x |   Loc_y   |   Loc_z   |']
+        write_strs = ['|  Frame   |   External Matrix  |']
         while True and counter < args.frames:
             
             # Tick the server
@@ -141,12 +145,12 @@ def main():
                         if 'depth' in s_name:
                             save_queue.put((os.path.join(args.save_data_path,'cubemap','{}_{}_{}.png'.format(s_name,s_data.frame,s_data.timestamp)),s_data,carla.ColorConverter.Depth))
                             cur_frame = s_frame
-                            cur_loc = s_data.transform.location
+                            cur_ex_matrix = s_data.transform.get_matrix()
                         elif 'rgb' in s_name:
                             save_queue.put((os.path.join(args.save_data_path,'cubemap','{}_{}_{}.png'.format(s_name,s_data.frame,s_data.timestamp)),s_data,carla.ColorConverter.Raw))  
                     
                 print(f'INFO: [{counter+1}]/[{args.frames}]')
-                write_strs.append(f'\n|    {cur_frame}  |   {cur_loc.x}  |   {cur_loc.y}  |   {cur_loc.z}  ')
+                write_strs.append(f'\n| {cur_frame} |   {str(cur_ex_matrix)}  |')
                 counter += 1
 
                 while not save_queue.empty():
