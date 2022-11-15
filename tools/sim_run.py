@@ -143,7 +143,7 @@ def main():
                         save_queue.put((os.path.join(args.save_data_path,'pinhole','{}_{}_{}.png'.format(s_name, s_data.frame, s_data.timestamp)),s_data,carla.ColorConverter.Raw))
                     elif 'cm' in s_name:
                         if 'depth' in s_name:
-                            save_queue.put((os.path.join(args.save_data_path,'cubemap','{}_{}_{}.png'.format(s_name,s_data.frame,s_data.timestamp)),s_data,carla.ColorConverter.Depth))
+                            save_queue.put((os.path.join(args.save_data_path,'cubemap','{}_{}_{}.png'.format(s_name,s_data.frame,s_data.timestamp)),s_data,carla.ColorConverter.Raw))
                             cur_frame = s_frame
                             cur_ex_matrix = s_data.transform.get_matrix()
                         elif 'rgb' in s_name:

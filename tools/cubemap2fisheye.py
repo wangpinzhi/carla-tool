@@ -49,7 +49,7 @@ if __name__ == '__main__':
             
             #back - left - front - right - up - down 
             #step 1 readcube
-            cube[0,:,:,:]=np.transpose(cv2.imread(glob.glob(f"{args.cubemap_dir}/cm_{cam}_down_{frame}_*.png")[0]),(2,0,1))
+            cube[0,:,:,:]=np.transpose(cv2.imread(glob.glob(f"{args.cubemap_dir}/cm_{cam}_back_{frame}_*.png")[0]),(2,0,1))
             cube[1,:,:,:]=np.transpose(cv2.imread(glob.glob(f"{args.cubemap_dir}/cm_{cam}_left_{frame}_*.png")[0]),(2,0,1))
             cube[2,:,:,:]=np.transpose(cv2.imread(glob.glob(f"{args.cubemap_dir}/cm_{cam}_front_{frame}_*.png")[0]),(2,0,1))
             cube[3,:,:,:]=np.transpose(cv2.imread(glob.glob(f"{args.cubemap_dir}/cm_{cam}_right_{frame}_*.png")[0]),(2,0,1))
@@ -62,5 +62,5 @@ if __name__ == '__main__':
             fish = fish.transpose((1, 2, 0))
             fish.astype(np.uint8)
             cv2.imwrite(os.path.join(args.output_dir,f'fe_{cam}_{frame}.jpg'), fish)
-            print('\r', f'Total:  {total_steps}   Processed: {step}   Left:   {total_steps-step}', end=' ', file=sys.stdout, flush=True)
+            print('\r', f'Total Frames:  {total_steps}   Processed Frames: {step}   Left Frames:   {total_steps-step}', end=' ', file=sys.stdout, flush=True)
             step = step + 1

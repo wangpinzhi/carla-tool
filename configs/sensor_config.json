@@ -8,7 +8,7 @@
             "image_height":1024,
             "image_width":1024,
             "fov":90,
-            "sensor_tick":0.12
+            "sensor_tick":0.22
         },
         {
             "name" : "cm_rgb2",
@@ -18,7 +18,7 @@
             "image_height":1024,
             "image_width":1024,
             "fov":90,
-            "sensor_tick":0.12
+            "sensor_tick":0.22
         },
         {
             "name" : "cm_rgb3",
@@ -28,7 +28,7 @@
             "image_height":1024,
             "image_width":1024,
             "fov":90,
-            "sensor_tick":0.12
+            "sensor_tick":0.22
         },
         {
             "name" : "cm_rgb4",
@@ -38,7 +38,7 @@
             "image_height":1024,
             "image_width":1024,
             "fov":90,
-            "sensor_tick":0.12
+            "sensor_tick":0.22
         }
     ],
 
@@ -51,7 +51,7 @@
             "image_height":1024,
             "image_width":1024,
             "fov":90,
-            "sensor_tick":0.12
+            "sensor_tick":0.22
         }
     ],
 
@@ -67,7 +67,7 @@
             "image_height":1024,
             "image_width":1024,
             "fov":90,
-            "sensor_tick":0.12
+            "sensor_tick":0.22
         },
         {
             "name" : "ph_rgb2",
@@ -80,7 +80,7 @@
             "image_height":1024,
             "image_width":1024,
             "fov":90,
-            "sensor_tick":0.12
+            "sensor_tick":0.22
         },
         {
             "name" : "ph_rgb3",
@@ -93,7 +93,7 @@
             "image_height":1024,
             "image_width":1024,
             "fov":90,
-            "sensor_tick":0.12
+            "sensor_tick":0.22
         },
         {
             "name" : "ph_rgb4",
@@ -106,7 +106,7 @@
             "image_height":1024,
             "image_width":1024,
             "fov":90,
-            "sensor_tick":0.12
+            "sensor_tick":0.22
         },
         {
             "name" : "ph_rgb5",
@@ -119,7 +119,7 @@
             "image_height":1024,
             "image_width":1024,
             "fov":90,
-            "sensor_tick":0.12
+            "sensor_tick":0.22
         },
         {
             "name" : "ph_rgb6",
@@ -132,7 +132,7 @@
             "image_height":1024,
             "image_width":1024,
             "fov":90,
-            "sensor_tick":0.12
+            "sensor_tick":0.22
         }
     ]
 }

@@ -1,5 +1,5 @@
 old_version/
-output_data/
-output_fisheye/
-output_raw_data/
+output_*/
+cube_help.npy
 tools/generate_traffic.py
+*.zip
