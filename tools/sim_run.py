@@ -50,11 +50,15 @@ def main():
         traffic_manager.set_respawn_dormant_vehicles(True)
         traffic_manager.set_boundaries_respawn_dormant_vehicles(25,700)
 
+        # 获得可用重生点
+
+
+
         # 设置ego_vehicle
-        transform_vehicle = random.choice(world.get_map().get_spawn_points())
+        transform_ego = random.choice(world.get_map().get_spawn_points())
         ego_bp = blueprint_library.find("vehicle.audi.invisiable") # 设置audi.tt为invisiable
         ego_bp.set_attribute('role_name', 'hero')
-        ego_vehicle = world.spawn_actor(ego_bp, transform_vehicle)
+        ego_vehicle = world.spawn_actor(ego_bp, transform_ego)
         traffic_manager.ignore_lights_percentage(ego_vehicle, 30) # ignore traffic lights percentage
         ego_vehicle.set_autopilot(True, args.traffic_manager_port)
         actor_list.append(ego_vehicle)
@@ -112,8 +116,9 @@ def main():
             blueprint.set_attribute('role_name', f'npc{n}')
 
             # spawn the cars and set their autopilot and light state all together
-            batch.append(SpawnActor(blueprint, transform)
-                .then(SetAutopilot(FutureActor, True, traffic_manager.get_port())))
+            if transform != transform_ego:
+                batch.append(SpawnActor(blueprint, transform)
+                    .then(SetAutopilot(FutureActor, True, traffic_manager.get_port())))
 
         for response in client.apply_batch_sync(batch, synchronous_master):
             if response.error:
