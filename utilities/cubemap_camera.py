@@ -11,7 +11,6 @@ def get_cubemap_camera_rgb(world, target_vehicle, sensor_queue, settings:list, s
     cam_bp = blueprint_library.find('sensor.camera.rgb')
     actors = []
 
-    global_rotation = [ 0, 0, 180, 180]
     for idx, cur_setting in  enumerate(settings):
         cam_bp.set_attribute("image_size_x", "{}".format(cur_setting["image_width"]))
         cam_bp.set_attribute("image_size_y", "{}".format(cur_setting["image_height"]))
@@ -23,7 +22,7 @@ def get_cubemap_camera_rgb(world, target_vehicle, sensor_queue, settings:list, s
             
             actor=world.spawn_actor(cam_bp, 
             carla.Transform(carla.Location(x=cur_setting['location_x'],y=cur_setting['location_y'],z=cur_setting['location_z']),
-                            carla.Rotation(pitch=rotation_pitch,yaw=rotation_yaw+global_rotation[idx],roll=rotation_roll)
+                            carla.Rotation(pitch=rotation_pitch,yaw=rotation_yaw+cur_setting['global_yaw_ratation'],roll=rotation_roll)
             ), attach_to=target_vehicle)
 
             actor.listen(lambda data, s_name=cur_setting["name"], s_view=view: cubemap_data_callback(data, sensor_queue, s_name, s_view, save_data_path))
@@ -39,7 +38,6 @@ def get_cubemap_camera_depth(world, target_vehicle, sensor_queue, settings:list,
     blueprint_library = world.get_blueprint_library()
     cam_bp = blueprint_library.find('sensor.camera.depth')
     actors = []
-    global_rotation = [ 0, 0, 180, 180]
     for idx, cur_setting in  enumerate(settings):
         cam_bp.set_attribute("image_size_x", "{}".format(cur_setting["image_width"]))
         cam_bp.set_attribute("image_size_y", "{}".format(cur_setting["image_height"]))
@@ -50,7 +48,7 @@ def get_cubemap_camera_depth(world, target_vehicle, sensor_queue, settings:list,
         for view, rotation_pitch, rotation_yaw, rotation_roll in items:
             actor=world.spawn_actor(cam_bp, 
             carla.Transform(carla.Location(x=cur_setting['location_x'],y=cur_setting['location_y'],z=cur_setting['location_z']),
-                            carla.Rotation(pitch=rotation_pitch,yaw=rotation_yaw+global_rotation[idx],roll=rotation_roll)
+                            carla.Rotation(pitch=rotation_pitch,yaw=rotation_yaw+cur_setting['global_yaw_ratation'],roll=rotation_roll)
             ), attach_to=target_vehicle)
             
 
