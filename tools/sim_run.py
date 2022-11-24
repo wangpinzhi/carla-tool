@@ -50,10 +50,6 @@ def main():
         traffic_manager.set_respawn_dormant_vehicles(True)
         traffic_manager.set_boundaries_respawn_dormant_vehicles(25,700)
 
-        # 获得可用重生点
-
-
-
         # 设置ego_vehicle
         transform_ego = random.choice(world.get_map().get_spawn_points())
         ego_bp = blueprint_library.find("vehicle.audi.invisiable") # 设置audi.tt为invisiable
@@ -62,10 +58,7 @@ def main():
         traffic_manager.ignore_lights_percentage(ego_vehicle, 30) # ignore traffic lights percentage
         ego_vehicle.set_autopilot(True, args.traffic_manager_port)
         actor_list.append(ego_vehicle)
-        
-        
-        
-        
+            
         # Sensor 队列
         sensor_queue = Queue(maxsize=-1)
 
@@ -136,6 +129,13 @@ def main():
             # 将CARLA界面摄像头跟随ego_vehicle动
             loc = ego_vehicle.get_transform().location
             spectator.set_transform(carla.Transform(carla.Location(x=loc.x,y=loc.y,z=35),carla.Rotation(yaw=0,pitch=-90,roll=0)))
+
+            # 将ego_car遇到的红灯变为绿灯
+            if ego_vehicle.is_at_traffic_light():
+                traffic_light = ego_vehicle.get_traffic_light()
+                if traffic_light.get_state() == carla.TrafficLightState.Red:
+                    traffic_light.set_state(carla.TrafficLightState.Green)
+
             # 处理传感器数据
             try:
 
