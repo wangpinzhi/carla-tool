@@ -55,7 +55,7 @@ def main():
         ego_bp = blueprint_library.find("vehicle.audi.invisiable") # 设置audi.tt为invisiable
         ego_bp.set_attribute('role_name', 'hero')
         ego_vehicle = world.spawn_actor(ego_bp, transform_vehicle)
-        traffic_manager.ignore_lights_percentage(ego_vehicle, 100) # ignore traffic lights percentage
+        traffic_manager.ignore_lights_percentage(ego_vehicle, 30) # ignore traffic lights percentage
         ego_vehicle.set_autopilot(True, args.traffic_manager_port)
         actor_list.append(ego_vehicle)
         
