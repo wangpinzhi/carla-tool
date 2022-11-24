@@ -136,7 +136,6 @@ def main():
 
                 save_queue = Queue()
                 cur_frame = None
-                cur_loc = None
                 for i in range(0, len(sensor_actors)):
                     s_name, s_frame, s_data  = sensor_queue.get(block=True, timeout=1.0)
                     if 'ph' in s_name:
