@@ -1,5 +1,10 @@
 @echo off
 
-start python tools/sim_run.py  --frames 500 --fixed_delta_time 0.08  --save_data_path "Town02_500_frames" 
+start python tools/sim_run.py     --frames 500^
+                                --fixed_delta_time 0.09^
+                                --save_data_path "output/Town02_frames_500"^
+                                --sensor_config_path "configs/sensor_config.json"^
+                                --reload_map^
+                                --map "Town02"
 
 pause

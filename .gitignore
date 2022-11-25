@@ -1,5 +1,6 @@
 old_version/
 output_*/
+output/*
 cube_help.npy
 tools/generate_traffic.py
 *.zip
