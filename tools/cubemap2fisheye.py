@@ -16,7 +16,7 @@ if __name__ == '__main__':
     parser.add_argument('--fov', type=int, default=210, help='target fisheye fov')
     parser.add_argument('--cubemap_dir', type=str, default='output_raw_data/cubemap')
     parser.add_argument('--camera_list', type=str, default='rgb1,rgb2,rgb3,rgb4')
-    parser.add_argument('--external_path', type=str, default='output_raw_data/external.txt')
+    parser.add_argument('--external_path', type=str, default='output_raw_data/external.txt', help='path of external.txt')
     parser.add_argument('--output_dir', type=str, default='output_raw_data/output_fisheye')
 
 
