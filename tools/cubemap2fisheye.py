@@ -18,11 +18,11 @@ if __name__ == '__main__':
     parser.add_argument('--camera_list', type=str, default='rgb1,rgb2,rgb3,rgb4')
     parser.add_argument('--external_path', type=str, default='output_raw_data/external.txt', help='path of external.txt')
     parser.add_argument('--output_dir', type=str, default='output_raw_data/output_fisheye')
-
+    parser.add_argument('--use_cuda',action='store_true',default=False, help='use gpu to post data')
 
     args=parser.parse_args()
     
-    c2f = Cubemap2Fisheye(1024, 1024, 1024, 1024, args.fov)
+    c2f = Cubemap2Fisheye(1024, 1024, 1024, 1024, args.fov, use_cuda=args.use_cuda)
     
     # get frames
     frames = []
@@ -64,3 +64,4 @@ if __name__ == '__main__':
             cv2.imwrite(os.path.join(args.output_dir,f'fe_{cam}_{frame}.jpg'), fish)
             print('\r', f'Total Frames:  {total_steps}   Processed Frames: {step}   Left Frames:   {total_steps-step}', end=' ', file=sys.stdout, flush=True)
             step = step + 1
+    print('',end='\n')

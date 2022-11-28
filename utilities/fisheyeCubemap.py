@@ -16,7 +16,7 @@ import torch.nn.functional as F
 
 
 class Fisheye2Cubemap:
-  def __init__(self, cube_face_h, cube_face_w, fish_h, fish_w, fish_FoV, Rot=np.identity(3, dtype=np.float32)):
+  def __init__(self, cube_face_h, cube_face_w, fish_h, fish_w, fish_FoV, Rot=np.identity(3, dtype=np.float32),use_cuda=False):
     self.FoV = fish_FoV // 2
     self.radius = fish_h // 2
     R_list = []
@@ -82,7 +82,14 @@ class Fisheye2Cubemap:
 
 
 class Cubemap2Fisheye:
-  def __init__(self, cube_face_h, cube_face_w, fish_h, fish_w, fish_FoV, Rot=np.identity(3, dtype=np.float32)):
+  def __init__(self, cube_face_h, cube_face_w, fish_h, fish_w, fish_FoV, Rot=np.identity(3, dtype=np.float32),use_cuda=False):
+
+    if use_cuda:
+      self.device = torch.device('cuda:0')
+    else:
+      self.device = torch.device('cpu')
+
+
     self.radius = (fish_h) // 2
     self.FoV = fish_FoV // 2
     self.FovTh = self.FoV / 180 * np.pi
@@ -171,9 +178,11 @@ class Cubemap2Fisheye:
     for i in range(0, 6):
       ori = cube_faces[i, :, :, :]
       ori = torch.from_numpy(ori).unsqueeze(0)
+      ori.to(self.device)
       mask_grid = torch.from_numpy(self.masked_grid_list[i]).unsqueeze(0)
+      mask_grid.to(self.device)
       fish = F.grid_sample(ori, mask_grid, mode='bilinear',padding_mode='zeros', align_corners=True)
-      fish = fish.squeeze_(0).numpy()
+      fish = fish.squeeze_(0).cpu().numpy()
       mask = ~(np.repeat(np.expand_dims(self.mask_list[i], 0), c, 0))
       fish[mask] = 0.0
       out = out + fish

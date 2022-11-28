@@ -312,6 +312,8 @@ class c2e:
     if batch_size % 6 != 0:
       raise ValueError("Batch size should be 6x")
     processed = []
+    if self.CUDA:
+      batch = Variable(batch, requires_grad=False).cuda()
     for idx in range(int(batch_size / 6)):
       target = batch[idx * 6:(idx + 1) * 6, :, :, :]
       target_processed = self._ToEquirec(target, mode)

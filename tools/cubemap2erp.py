@@ -21,10 +21,11 @@ if __name__ == '__main__':
     parser.add_argument('--external_path', type=str, default='output_invisiable_data_frame100/external.txt')
     parser.add_argument('--output_dir', type=str, default='output_invisiable_data_frame100/output_erp')
     parser.add_argument('--out_height',type=int,default=1024)
+    parser.add_argument('--use_cuda',action='store_true',default=False, help='use gpu to post data')
 
     args=parser.parse_args()
     
-    cubemap2erp = c2e(cubeW=1024, outH=args.out_height, outW=args.out_height*2)
+    cubemap2erp = c2e(cubeW=1024, outH=args.out_height, outW=args.out_height*2,CUDA=args.use_cuda)
     if not os.path.exists(r'cube_help.npy'):
         cube_cos = np.zeros((1024,1024),dtype=np.float64)
         for i in range(1024):
@@ -85,3 +86,4 @@ if __name__ == '__main__':
                 np.save(os.path.join(args.output_dir, f'erp_{cam}_{frame}.npy'),out)
                 print('\r', f'Total Frames:  {total_steps}   Processed Frames: {step}   Left Frames:   {total_steps-step}', end=' ', file=sys.stdout, flush=True)
                 step = step + 1
+    print('',end='\n')
