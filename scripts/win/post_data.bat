@@ -1,16 +1,19 @@
 @echo off
 
-set root_path=output/Town04_frames_500
+@REM Variables
+set WORLD_MAP=Town05
+set FRAMES=500
+set ROOT_PATH=output/%WORLD_MAP%_frames_%FRAMES%
 
-echo [INFO]file_path:"%root_path%"
+echo [INFO]file_path:"%ROOT_PATH%"
 
 start python tools/cubemap2fisheye.py --fov 210^
-                                --external_path "%root_path%/external.txt"^
-                                --cubemap_dir "%root_path%/cubemap"^
-                                --output_dir "%root_path%/fisheye"^
+                                --external_path "%ROOT_PATH%/external.txt"^
+                                --cubemap_dir "%ROOT_PATH%/cubemap"^
+                                --output_dir "%ROOT_PATH%/fisheye"^
                                 --use_cuda
 
-start python tools/cubemap2erp.py     --external_path "%root_path%/external.txt"^
-                                --cubemap_dir "%root_path%/cubemap"^
-                                --output_dir "%root_path%/erp"^
+start python tools/cubemap2erp.py     --external_path "%ROOT_PATH%/external.txt"^
+                                --cubemap_dir "%ROOT_PATH%/cubemap"^
+                                --output_dir "%ROOT_PATH%/erp"^
                                 --use_cuda
