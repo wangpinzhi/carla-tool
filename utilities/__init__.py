@@ -2,6 +2,7 @@ from utilities.pinhole_camera import get_pinhole_camera_rgb
 from utilities.cubemap_camera import get_cubemap_camera_rgb, get_cubemap_camera_depth
 from utilities.fisheyeCubemap import Cubemap2Fisheye
 from utilities.erpCubemap import c2e
+from utilities.generate_npc import generate_vehicle, generate_walker
 import json
 import argparse
 import os
@@ -18,6 +19,8 @@ def get_args():
     parser.add_argument('--sync_mode', action='store_true', default=True, help='decide whether use sync mode')
     parser.add_argument('--fixed_delta_time', type=float ,default=0.05, help='fixed_delta_time of the server')
     parser.add_argument('--traffic_manager_port', type= int, default=8000, help='the port number of the traffic manager')
+    parser.add_argument('--no-rendering',action='store_true',default=False,help='Activate no rendering mode')
+
 
     # collect settings
     parser.add_argument('--frames', type=int, default=5000, help='the frames of collect data')
@@ -32,6 +35,8 @@ def get_args():
     parser.add_argument('--generationv',metavar='G',default='All',help='restrict to certain vehicle generation (values: "1","2","All" - default: "All")')
     parser.add_argument('--filterw',metavar='PATTERN',default='walker.pedestrian.*',help='Filter pedestrian type (default: "walker.pedestrian.*")')
     parser.add_argument('--generationw',metavar='G',default='2',help='restrict to certain pedestrian generation (values: "1","2","All" - default: "2")')
+    parser.add_argument('--seedw',metavar='S', default=0, type=int, help='Set the seed for pedestrians module')
+
 
     return parser.parse_args()
 
@@ -63,28 +68,3 @@ def config_sensors(world, target_vehicle, sensor_queue, args):
     print('sensors:', len(sensor_actors))
 
     return sensor_actors
-
-
-def get_actor_blueprints(world, filter, generation):
-    bps = world.get_blueprint_library().filter(filter)
-
-    if generation.lower() == "all":
-        return bps
-
-    # If the filter returns only one bp, we assume that this one needed
-    # and therefore, we ignore the generation
-    if len(bps) == 1:
-        return bps
-
-    try:
-        int_generation = int(generation)
-        # Check if generation is in available generations
-        if int_generation in [1, 2]:
-            bps = [x for x in bps if int(x.get_attribute('generation')) == int_generation]
-            return bps
-        else:
-            print("   Warning! Actor Generation is not valid. No actor will be spawned.")
-            return []
-    except:
-        print("   Warning! Actor Generation is not valid. No actor will be spawned.")
-        return []
