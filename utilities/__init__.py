@@ -6,6 +6,9 @@ from utilities.generate_npc import generate_vehicle, generate_walker
 import json
 import argparse
 import os
+import cv2
+from PIL import Image
+
 
 
 def get_args():

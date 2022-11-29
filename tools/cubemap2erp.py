@@ -9,6 +9,7 @@ import glob,os,re
 import numpy as np
 import cv2
 import math
+from PIL import Image
 
 
 if __name__ == '__main__':
@@ -79,10 +80,10 @@ if __name__ == '__main__':
                 out = np.squeeze(out,axis=0)
                 out = np.squeeze(out,axis=0)
 
-                vis = (out.max()-out)/(out.max()-out.min())*255
-                vis = np.array(vis,dtype=np.uint8)
-
-                cv2.imwrite(os.path.join(outputVis_dir, f'erpVis_{cam}_{frame}.png'),vis)
+                vis_color=cv2.applyColorMap(cv2.convertScaleAbs(out,alpha=255/50),cv2.COLORMAP_JET)
+                im=Image.fromarray(vis_color)
+                
+                im.save(os.path.join(outputVis_dir, f'erpVis_{cam}_{frame}.png'))
                 np.save(os.path.join(args.output_dir, f'erp_{cam}_{frame}.npy'),out)
                 print('\r', f'Total Frames:  {total_steps}   Processed Frames: {step}   Left Frames:   {total_steps-step}', end=' ', file=sys.stdout, flush=True)
                 step = step + 1

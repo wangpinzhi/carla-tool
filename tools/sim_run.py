@@ -35,6 +35,8 @@ def main():
         settings.actor_active_distance = 2000
         settings.synchronous_mode = args.sync_mode # Enables synchronous mode
         settings.fixed_delta_seconds = args.fixed_delta_time
+        if args.no_rendering:
+            settings.no_rendering_mode = True
         world.apply_settings(settings)
 
         # 获得spectator        

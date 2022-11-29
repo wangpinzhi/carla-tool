@@ -1,7 +1,7 @@
 @echo off
 
 @REM Variables
-set WORLD_MAP=Town05
+set WORLD_MAP=Town07
 set FRAMES=500
 set ROOT_PATH=output/%WORLD_MAP%_frames_%FRAMES%
 
