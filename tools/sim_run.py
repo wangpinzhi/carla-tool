@@ -130,14 +130,14 @@ def main():
                 counter += 1
 
             except Empty:
-                print("Some of the sensor information is missed!")
+                logging.warning("Some of the sensor information is missed!")
                 # Tick the server     
     
     finally:
         world.apply_settings(original_settings)
         
         # destory vehicle actors
-        print('\ndestroying %d vehicles' % len(vehicles_list))
+        logging.info('\ndestroying %d vehicles' % len(vehicles_list))
         client.apply_batch([carla.command.DestroyActor(x) for x in vehicles_list])
 
         # stop walker controllers (list is [controller, actor, controller, actor ...])
@@ -145,14 +145,14 @@ def main():
             all_actors[i].stop()
         
         # destory walker actors
-        print('\ndestroying %d walkers' % len(walkers_list))
+        logging.info('\ndestroying %d walkers' % len(walkers_list))
         client.apply_batch([carla.command.DestroyActor(x) for x in all_id])
 
         traffic_manager.set_synchronous_mode(False)
 
         for actor in actor_list:
             actor.destroy()
-        print("\nbasic actors cleaned up!!!")
+        logging.info("\nbasic actors cleaned up!!!")
         
         with open(os.path.join(args.save_data_path,'external.txt'),'a') as f:
             f.writelines(write_strs)
