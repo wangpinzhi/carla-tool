@@ -1,0 +1,12 @@
+{
+    "route_indices":[52,150,152],
+    "map":"Town10",
+    "hero_actor":{
+        "blueprint":"vehicle.audi.tt",
+        "spawn_points_index":32
+    },
+    "vehicle_npc":[
+
+    ],
+    "walker_npc":[]
+}

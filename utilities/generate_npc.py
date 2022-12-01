@@ -29,7 +29,7 @@ def get_actor_blueprints(world, filter, generation):
         return []
 
 
-def generate_vehicle(client, world, traffic_manager, transform_ego, args):
+def random_generate_vehicle(client, world, traffic_manager, transform_ego, args):
 
     # 获取所有车辆蓝图
     npc_blueprints_vehicle = get_actor_blueprints(
@@ -88,7 +88,7 @@ def generate_vehicle(client, world, traffic_manager, transform_ego, args):
 
     return vehicles_list
 
-def generate_walker(client, world,  args):
+def random_generate_walker(client, world,  args):
     
     SpawnActor = carla.command.SpawnActor
     npc_blueprints_walker = get_actor_blueprints(world, args.filterw, args.generationw)

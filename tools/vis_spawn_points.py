@@ -4,7 +4,7 @@ sys.path.insert(0, parent_path)
 
 from utilities import get_args
 
-import carla,logging,cv2
+import carla,logging,cv2,re
 
 if __name__ == '__main__':
 
@@ -17,6 +17,12 @@ if __name__ == '__main__':
 
     # 获取world
     world = client.get_world()
+
+    # 获取当前map
+    
+    reg = re.compile('Town\d\d')
+    old_map = re.findall(reg,world.get_map().name)
+    logging.info('world map: %s',old_map[0])
 
     # 获取所有 spawn points
     spawn_points = world.get_map().get_spawn_points()

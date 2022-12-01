@@ -2,12 +2,11 @@ from utilities.pinhole_camera import get_pinhole_camera_rgb
 from utilities.cubemap_camera import get_cubemap_camera_rgb, get_cubemap_camera_depth
 from utilities.fisheyeCubemap import Cubemap2Fisheye
 from utilities.erpCubemap import c2e
-from utilities.generate_npc import generate_vehicle, generate_walker
-import json
-import argparse
+from utilities.generate_npc import random_generate_vehicle, random_generate_walker
+import carla
+import json,re
+import argparse,logging
 import os
-import cv2
-from PIL import Image
 
 
 
@@ -28,6 +27,7 @@ def get_args():
     # collect settings
     parser.add_argument('--frames', type=int, default=5000, help='the frames of collect data')
     parser.add_argument('--sensor_config_path', type=str, default='configs\sensor_config.json', help='the path of config file')
+    parser.add_argument('--scene_config_path',type=str,default='configs/scene_configs/demo1.json',help='the path of scene_config file')
     parser.add_argument('--save_data_path', type=str, default='output_data_maskcar', help='the path for saving data')
 
     # npc setttings
@@ -71,3 +71,65 @@ def config_sensors(world, target_vehicle, sensor_queue, args):
     print('sensors:', len(sensor_actors))
 
     return sensor_actors
+
+def config_sim_scene(args):
+
+    # read config json
+    with open(args.scene_config_path,'r') as f:
+        scene_settings = json.load(f)
+    
+    # get client
+    client = carla.Client(args.server_ip, args.server_port)
+    client.set_timeout(10.0)
+
+    # 连接world
+    world = client.get_world()
+
+    # 获取当前map
+    reg = re.compile('Town\d\d')
+    old_map = re.findall(reg,world.get_map().name)[0]
+    if old_map != scene_settings["map"]:
+        world = client.load_world(scene_settings["map"])
+        logging.info('reload world map: %s->%s',old_map[0],scene_settings["map"])
+    
+    # 应用设置
+    original_settings = world.get_settings()
+    settings = world.get_settings()
+    settings.actor_active_distance = 2000
+    settings.synchronous_mode = args.sync_mode # Enables synchronous mode
+    settings.fixed_delta_seconds = args.fixed_delta_time
+    if args.no_rendering:
+        settings.no_rendering_mode = True
+    world.apply_settings(settings)
+
+    # 获得spectator        
+    spectator = world.get_spectator() 
+        
+    # 获取world蓝图
+    blueprint_library = world.get_blueprint_library()
+    
+    # Traffic Manager
+    traffic_manager = client.get_trafficmanager(args.traffic_manager_port)
+    traffic_manager.set_global_distance_to_leading_vehicle(1.0)
+    traffic_manager.set_synchronous_mode(args.sync_mode)
+    traffic_manager.set_random_device_seed(62)
+    traffic_manager.set_hybrid_physics_mode(True)
+    traffic_manager.set_hybrid_physics_radius(70.0)
+    traffic_manager.set_respawn_dormant_vehicles(True)
+    traffic_manager.set_boundaries_respawn_dormant_vehicles(25,700)
+    
+    # 获得spawn points
+    spawn_points = world.get_map().get_spawn_points()
+
+    # 设置hero car
+    hero_bp = blueprint_library.find(scene_settings["hero_actor"]["blueprint"])
+    hero_bp.set_attribute('role_name', 'hero')
+    hero_actor = world.spawn_actor(hero_bp,spawn_points[scene_settings["hero_actor"]["spawn_points_index"]])
+    route = [spawn_points[ind].location for ind in scene_settings["route_indices"]]
+    traffic_manager.set_path(hero_actor, route) # 设置车辆行驶路线
+    
+    return hero_actor, spectator, client, original_settings
+
+    
+
+    

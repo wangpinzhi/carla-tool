@@ -7,7 +7,7 @@ sys.path.insert(0, parent_path)
 
 import carla
 import random
-from utilities import get_args, config_sensors, generate_vehicle, generate_walker
+from utilities import get_args, config_sensors, random_generate_vehicle, random_generate_walker
 from queue import Queue, Empty
 import logging
 
@@ -73,8 +73,9 @@ def main():
         counter = 0
 
         # generate npc
-        vehicles_list = generate_vehicle(client,world,traffic_manager,transform_ego,args)
-        walkers_list, all_id, all_actors = generate_walker(client,world,args)
+        
+        vehicles_list = random_generate_vehicle(client,world,traffic_manager,transform_ego,args)
+        walkers_list, all_id, all_actors = random_generate_walker(client,world,args)
        
 
         print('spawned %d vehicles and %d walkers' % (len(vehicles_list), len(walkers_list)))
@@ -108,13 +109,13 @@ def main():
                 cur_frame = None
                 for i in range(0, len(sensor_actors)):
                     s_name, s_frame, s_data  = sensor_queue.get(block=True, timeout=1.0)
+                    cur_frame = s_frame
+                    cur_ex_matrix = s_data.transform.get_matrix()
                     if 'ph' in s_name:
                         save_queue.put((os.path.join(args.save_data_path,'pinhole','{}_{}_{}.png'.format(s_name, s_data.frame, s_data.timestamp)),s_data,carla.ColorConverter.Raw))
                     elif 'cm' in s_name:
                         if 'depth' in s_name:
                             save_queue.put((os.path.join(args.save_data_path,'cubemap','{}_{}_{}.png'.format(s_name,s_data.frame,s_data.timestamp)),s_data,carla.ColorConverter.Raw))
-                            cur_frame = s_frame
-                            cur_ex_matrix = s_data.transform.get_matrix()
                         elif 'rgb' in s_name:
                             save_queue.put((os.path.join(args.save_data_path,'cubemap','{}_{}_{}.png'.format(s_name,s_data.frame,s_data.timestamp)),s_data,carla.ColorConverter.Raw))  
 
