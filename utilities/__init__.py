@@ -18,7 +18,7 @@ def get_args():
     parser.add_argument('--server_port', type=int, default=2000, help='the port of carla server listen')
     parser.add_argument('--reload_map', action='store_true', default=False, help='decide whether reload map')
     parser.add_argument('--map', type=str, default='Town01', choices=['Town01', 'Town02', 'Town03', 'Town04', 'Town05', 'Town06', 'Town07', 'Town08', 'Town09', 'Town10'])
-    parser.add_argument('--sync_mode', action='store_true', default=True, help='decide whether use sync mode')
+    parser.add_argument('--sync_mode', action='store_true', default=False, help='decide whether use sync mode')
     parser.add_argument('--fixed_delta_time', type=float ,default=0.05, help='fixed_delta_time of the server')
     parser.add_argument('--traffic_manager_port', type= int, default=8000, help='the port number of the traffic manager')
     parser.add_argument('--no-rendering',action='store_true',default=False,help='Activate no rendering mode')
