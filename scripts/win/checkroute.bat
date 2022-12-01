@@ -2,6 +2,6 @@
 
 @REM Variables
 
-python tools/sim_checkroute.py  --fixed_delta_time 0.05
+python tools/sim_checkroute.py
                 
 pause

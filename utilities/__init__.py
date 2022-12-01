@@ -3,6 +3,7 @@ from utilities.cubemap_camera import get_cubemap_camera_rgb, get_cubemap_camera_
 from utilities.fisheyeCubemap import Cubemap2Fisheye
 from utilities.erpCubemap import c2e
 from utilities.generate_npc import random_generate_vehicle, random_generate_walker
+from utilities.generate_npc import generate_vehicle, generate_walker
 import carla
 import json,re
 import argparse,logging
@@ -97,7 +98,8 @@ def config_sim_scene(args):
     settings = world.get_settings()
     settings.actor_active_distance = 2000
     settings.synchronous_mode = args.sync_mode # Enables synchronous mode
-    settings.fixed_delta_seconds = args.fixed_delta_time
+    if args.sync_mode:
+        settings.fixed_delta_seconds = args.fixed_delta_time
     if args.no_rendering:
         settings.no_rendering_mode = True
     world.apply_settings(settings)
@@ -118,6 +120,7 @@ def config_sim_scene(args):
     traffic_manager.set_respawn_dormant_vehicles(True)
     traffic_manager.set_boundaries_respawn_dormant_vehicles(25,700)
     
+    
     # 获得spawn points
     spawn_points = world.get_map().get_spawn_points()
 
@@ -125,10 +128,14 @@ def config_sim_scene(args):
     hero_bp = blueprint_library.find(scene_settings["hero_actor"]["blueprint"])
     hero_bp.set_attribute('role_name', 'hero')
     hero_actor = world.spawn_actor(hero_bp,spawn_points[scene_settings["hero_actor"]["spawn_points_index"]])
-    route = [spawn_points[ind].location for ind in scene_settings["route_indices"]]
-    traffic_manager.set_path(hero_actor, route) # 设置车辆行驶路线
-    
-    return hero_actor, spectator, client, original_settings
+    route = [spawn_points[ind].location for ind in scene_settings["hero_actor"]["route_indices"]]
+    hero_actor.set_autopilot(True, args.traffic_manager_port)
+
+    # gen vehicle npc
+    npc_vehicle_list = generate_vehicle(client,scene_settings["vehicle_npc"],args)
+    npc_walker_list, npc_walker_id, npc_walker_actors = generate_walker(client,scene_settings["walker_npc"],args)
+
+    return hero_actor, spectator, route, client, original_settings, npc_vehicle_list, npc_walker_list, npc_walker_id, npc_walker_actors
 
     
 

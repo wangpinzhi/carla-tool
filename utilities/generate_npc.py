@@ -3,6 +3,8 @@ import random
 import carla
 
 
+
+
 def get_actor_blueprints(world, filter, generation):
     bps = world.get_blueprint_library().filter(filter)
 
@@ -27,6 +29,125 @@ def get_actor_blueprints(world, filter, generation):
     except:
         print("   Warning! Actor Generation is not valid. No actor will be spawned.")
         return []
+
+
+def generate_vehicle(client, gen_list, args):
+
+    vehicle_list = []
+    batch = []
+
+    SpawnActor = carla.command.SpawnActor
+    SetAutopilot = carla.command.SetAutopilot
+    FutureActor = carla.command.FutureActor
+
+    world = client.get_world()
+    blueprint_library = world.get_blueprint_library()
+    spawn_points = world.get_map().get_spawn_points()
+
+    for vehicle_setting in gen_list:
+        batch.append(
+            SpawnActor(
+                blueprint_library.find(vehicle_setting["blueprint"]), spawn_points[vehicle_setting["spawn_points_index"]]
+            ).then(
+                SetAutopilot(FutureActor, True, args.traffic_manager_port)
+            )
+        )
+    
+    for response in client.apply_batch_sync(batch, args.sync_mode):
+        if response.error:
+            logging.error(response.error)
+        else:
+            vehicle_list.append(response.actor_id)
+    
+    return vehicle_list
+
+def generate_walker(client, gen_list, args):
+
+    world = client.get_world()
+    SpawnActor = carla.command.SpawnActor
+    walkers_list = []
+    all_id = []
+
+    percentagePedestriansRunning=0.0
+    percentagePedestriansCrossing=0.0
+    
+    # spawn the walker object
+    batch = []
+    walker_speed = []
+
+    for walker_setting in gen_list:
+        walker_bp = world.get_blueprint_library().find(walker_setting["blueprint"])
+        # set as not invincible
+        if walker_bp.has_attribute('is_invincible'):
+            walker_bp.set_attribute('is_invincible', 'false')
+
+        # set the max speed
+        if walker_bp.has_attribute('speed'):
+            if (random.random() > percentagePedestriansRunning):
+                # walking
+                walker_speed.append(walker_bp.get_attribute('speed').recommended_values[1])
+            else:
+                # running
+                walker_speed.append(walker_bp.get_attribute('speed').recommended_values[2])
+        else:
+            print("Walker has no speed")
+            walker_speed.append(0.0)
+        
+        walker_transform = carla.Transform(
+            carla.Location(x=walker_setting["spawn_points_x"],y=walker_setting["spawn_points_y"],z=walker_setting["spawn_points_z"]),
+            carla.Rotation(0,0,0)
+        ) 
+        batch.append(SpawnActor(walker_bp,walker_transform))
+
+    results = client.apply_batch_sync(batch, True)
+    walker_speed2 = []
+    for i in range(len(results)):
+        if results[i].error:
+            logging.error(results[i].error)
+        else:
+            walkers_list.append({"id": results[i].actor_id})
+            walker_speed2.append(walker_speed[i])
+    walker_speed = walker_speed2
+        
+    # spawn the walker controller
+    batch = []
+    walker_controller_bp = world.get_blueprint_library().find('controller.ai.walker')
+    for i in range(len(walkers_list)):
+        batch.append(SpawnActor(walker_controller_bp, carla.Transform(
+            carla.Location(x=walker_setting["spawn_points_x"],y=walker_setting["spawn_points_y"],z=walker_setting["spawn_points_z"]+100),
+            carla.Rotation(0,0,0)
+        ), walkers_list[i]["id"]))
+    results = client.apply_batch_sync(batch, True)
+    for i in range(len(results)):
+        if results[i].error:
+            logging.error(results[i].error)
+        else:
+            walkers_list[i]["con"] = results[i].actor_id
+    
+    # put together the walkers and controllers id to get the objects from their id
+    for i in range(len(walkers_list)):
+        all_id.append(walkers_list[i]["con"])
+        all_id.append(walkers_list[i]["id"])
+    all_actors = world.get_actors(all_id)
+
+    # wait for a tick to ensure client receives the last transform of the walkers we have just created
+    if not args.sync_mode:
+        world.wait_for_tick()
+    else:
+        world.tick()
+        
+    # 5. initialize each controller and set target to walk to (list is [controler, actor, controller, actor ...])
+    # set how many pedestrians can cross the road
+    world.set_pedestrians_cross_factor(percentagePedestriansCrossing)
+    for i in range(0, len(all_id), 2):
+        # start walker
+        all_actors[i].start()
+        # set walk to random point
+        all_actors[i].go_to_location(world.get_random_location_from_navigation())
+        # max speed
+        all_actors[i].set_max_speed(float(walker_speed[int(i/2)]))
+    
+    return walkers_list, all_id, all_actors
 
 
 def random_generate_vehicle(client, world, traffic_manager, transform_ego, args):

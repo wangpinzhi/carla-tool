@@ -1,12 +1,35 @@
 {
-    "route_indices":[52,150,152],
     "map":"Town10",
     "hero_actor":{
         "blueprint":"vehicle.audi.tt",
-        "spawn_points_index":32
+        "spawn_points_index":32,
+        "route_indices":[52,150,152]
     },
     "vehicle_npc":[
-
+        {
+            "blueprint":"vehicle.carlamotors.carlacola",
+            "spawn_points_index":85
+        },
+        {
+            "blueprint":"vehicle.dodge.charger_police_2020",
+            "spawn_points_index":142
+        },
+        {
+            "blueprint":"vehicle.ford.ambulance",
+            "spawn_points_index":144
+        },
+        {
+            "blueprint":"vehicle.tesla.cybertruck",
+            "spawn_points_index":64
+        }
     ],
-    "walker_npc":[]
+    "walker_npc":[
+        {
+            "blueprint":"walker.pedestrian.0001",
+            "spawn_points_x":-34,
+            "spawn_points_y":38,
+            "spawn_points_z":0.6
+        }
+        
+    ]
 }

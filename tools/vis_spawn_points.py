@@ -26,8 +26,10 @@ if __name__ == '__main__':
 
     # 获取所有 spawn points
     spawn_points = world.get_map().get_spawn_points()
+    walker_spawn_location = carla.Location(x=-36,y=36,z=0.6)
 
     logging.info('Found %d recommanded spawn points',len(spawn_points))
 
     for i, spawn_point in enumerate(spawn_points):
-        world.debug.draw_string(spawn_point.location, str(i), life_time=10)
+        world.debug.draw_string(spawn_point.location, str(f'i:{i}, y:{spawn_point.location.y}'), life_time=10)
+    world.debug.draw_string(walker_spawn_location, 'walker', color=carla.Color(0,255,0,255),life_time=20)
