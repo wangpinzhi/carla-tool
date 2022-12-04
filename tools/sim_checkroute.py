@@ -33,14 +33,16 @@ def main():
             # 将CARLA界面摄像头跟随ego_vehicle动
             loc = hero_actor.get_transform().location
             rot = hero_actor.get_transform().rotation
-            spectator.set_transform(carla.Transform(carla.Location(x=loc.x,y=loc.y,z=35),carla.Rotation(yaw=0,pitch=-90,roll=0)))
+            # 车后视角
+            spectator.set_transform(carla.Transform((loc + carla.Location(x=0, y=-5, z=2)), carla.Rotation(yaw=rot.yaw, pitch=-10+rot.pitch, roll=rot.roll)))
+            
+            # spectator.set_transform(carla.Transform(carla.Location(x=loc.x,y=loc.y,z=35),carla.Rotation(yaw=0,pitch=-90,roll=0))) 
 
-            # Set parameters of TM vehicle control, we don't want lane changes
-            traffic_manager.update_vehicle_lights(hero_actor, True)
-            traffic_manager.random_left_lanechange_percentage(hero_actor, 0)
-            traffic_manager.random_right_lanechange_percentage(hero_actor, 0)
-            traffic_manager.auto_lane_change(hero_actor, False)
-            traffic_manager.set_path(hero_actor, hero_route) # 设置车辆行驶路线
+            # if hero_actor.is_at_traffic_light():
+            #    traffic_light = hero_actor.get_traffic_light()
+            #    traffic_light.set_state(carla.TrafficLightState.Green)
+
+            
             
     
     finally:

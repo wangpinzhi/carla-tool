@@ -3,7 +3,7 @@
     "hero_actor":{
         "blueprint":"vehicle.audi.tt",
         "spawn_points_index":32,
-        "route_indices":[52,150,152]
+        "route_indices":[52]
     },
     "vehicle_npc":[
         {

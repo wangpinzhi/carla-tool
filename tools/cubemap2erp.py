@@ -65,7 +65,7 @@ if __name__ == '__main__':
             #step 1 readcube
             if 'depth' in cam:
                 for idx,view in [(0,'back'),(1,'down'),(2,'front'),(3,'left'),(4,'right'),(5,'up')]:
-                    raw = cv2.imread(glob.glob(f"{args.cubemap_dir}/cm_{cam}_{view}_{frame}_*.png")[0],-1)
+                    raw = cv2.imread(glob.glob(f"{args.cubemap_dir}/cm_{cam}_{view}_{frame}.png")[0],-1)
                     raw = cv2.cvtColor(raw,cv2.COLOR_BGRA2RGB)
                     raw = raw.astype(np.float64)
                     raw = np.transpose(raw,(2,0,1))

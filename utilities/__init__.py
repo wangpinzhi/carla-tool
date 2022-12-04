@@ -112,9 +112,11 @@ def config_sim_scene(args):
     
     # Traffic Manager
     traffic_manager = client.get_trafficmanager(args.traffic_manager_port)
+    
+    traffic_manager.set_random_device_seed(62)
     traffic_manager.set_global_distance_to_leading_vehicle(1.0)
     traffic_manager.set_synchronous_mode(args.sync_mode)
-    traffic_manager.set_random_device_seed(62)
+
     traffic_manager.set_hybrid_physics_mode(True)
     traffic_manager.set_hybrid_physics_radius(70.0)
     traffic_manager.set_respawn_dormant_vehicles(True)
@@ -129,7 +131,14 @@ def config_sim_scene(args):
     hero_bp.set_attribute('role_name', 'hero')
     hero_actor = world.spawn_actor(hero_bp,spawn_points[scene_settings["hero_actor"]["spawn_points_index"]])
     route = [spawn_points[ind].location for ind in scene_settings["hero_actor"]["route_indices"]]
-    hero_actor.set_autopilot(True, args.traffic_manager_port)
+    hero_actor.set_autopilot(scene_settings["hero_actor"]["autopilot"], args.traffic_manager_port)
+    
+    # Set parameters of TM hero control
+    traffic_manager.ignore_lights_percentage(hero_actor, 100)
+    traffic_manager.random_left_lanechange_percentage(hero_actor, 0)
+    traffic_manager.random_right_lanechange_percentage(hero_actor, 0)
+    traffic_manager.auto_lane_change(hero_actor, True)
+    traffic_manager.set_path(hero_actor, route) # 设置车辆行驶路线
 
     # gen vehicle npc
     npc_vehicle_list = generate_vehicle(client,scene_settings["vehicle_npc"],args)

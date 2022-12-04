@@ -45,11 +45,22 @@ def generate_vehicle(client, gen_list, args):
     spawn_points = world.get_map().get_spawn_points()
 
     for vehicle_setting in gen_list:
+        if vehicle_setting["spawn_points_index"] == -1:
+            loc_x = vehicle_setting["spawn_points"]['loc_x']
+            loc_y = vehicle_setting["spawn_points"]['loc_y']
+            loc_z = vehicle_setting["spawn_points"]['loc_z']
+            rot_p = vehicle_setting["spawn_points"]['rot_p']
+            rot_y = vehicle_setting["spawn_points"]['rot_y']
+            rot_r = vehicle_setting["spawn_points"]['rot_r']
+            spwan_point = carla.Transform(carla.Location(loc_x,loc_y,loc_z),carla.Rotation(rot_p,rot_y,rot_r))
+        else:
+            spwan_point = spawn_points[vehicle_setting["spawn_points_index"]]
+
         batch.append(
             SpawnActor(
-                blueprint_library.find(vehicle_setting["blueprint"]), spawn_points[vehicle_setting["spawn_points_index"]]
+                blueprint_library.find(vehicle_setting["blueprint"]), spwan_point
             ).then(
-                SetAutopilot(FutureActor, True, args.traffic_manager_port)
+                SetAutopilot(FutureActor, vehicle_setting["autopilot"], args.traffic_manager_port)
             )
         )
     

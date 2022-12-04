@@ -1,0 +1,41 @@
+{
+    "cubemap_rgb":[
+        {
+            "name" : "cm_rgb1",
+            "location_x":0.25,
+            "location_y":-0.25,
+            "location_z":2,
+            "global_yaw_ratation":-45,
+            "image_height":1024,
+            "image_width":1024,
+            "fov":90,
+            "sensor_tick":0.0
+        },
+        {
+            "name" : "cm_rgb2",
+            "location_x":0.25,
+            "location_y":0.25,
+            "location_z":2,
+            "global_yaw_ratation":45,
+            "image_height":1024,
+            "image_width":1024,
+            "fov":90,
+            "sensor_tick":0.0
+        }
+    ],
+
+    "cubemap_depth":[
+        {
+            "name" : "cm_depth1",
+            "location_x":0.25,
+            "location_y":-0.25,
+            "location_z":2,
+            "global_yaw_ratation":-45,
+            "image_height":1024,
+            "image_width":1024,
+            "fov":90,
+            "sensor_tick":0.0
+        }
+    ],
+    "pinhole_rgb":[]
+}

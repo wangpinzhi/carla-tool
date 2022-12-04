@@ -5,3 +5,4 @@ cube_help.npy
 tools/generate_traffic.py
 *.zip
 *.pyc
+video/
