@@ -4,20 +4,21 @@ import time
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 sys.path.insert(0, parent_path)
 
-
-
 import carla
 import random,math,cv2 
 from utilities import get_args, config_sensors, config_sim_scene
 from queue import Queue, Empty
 from multiprocessing import JoinableQueue,Process,Value
-import logging
+import logging,json
 import numpy as np
 
-def producer(transQ:JoinableQueue, total_images:Value):
+def producer(transQ:JoinableQueue, start_time):
 
     args = get_args()
-    random.seed(5)
+    with open(args.config_path,'r') as f:
+        config_settings = json.load(f)
+    
+    random.seed(config_settings["random_seed"])
 
     # 设置日志输出
     logger = logging.getLogger("Producer")
@@ -30,10 +31,11 @@ def producer(transQ:JoinableQueue, total_images:Value):
 
     try:
         
-        hero_actor, spectator, hero_route, client, original_settings, npc_vehicle_list, npc_walker_list, npc_walker_id, npc_walker_actors = config_sim_scene(args)
+        hero_actor, client, original_settings, npc_vehicle_list, npc_walker_list, npc_walker_id, npc_walker_actors = config_sim_scene(args)
 
-        traffic_manager = client.get_trafficmanager(args.traffic_manager_port)
-        world = client.get_world()
+        world = client.get_world()     
+        spectator = world.get_spectator() 
+        
             
         # Sensor 队列
         sensor_queue = Queue(maxsize=-1)
@@ -44,60 +46,58 @@ def producer(transQ:JoinableQueue, total_images:Value):
 
         write_strs = ['|  Frame   |  Timestamp |External Matrix  |']
         
-        while True:
-        
-            if math.sqrt((hero_actor.get_location().x-hero_route[-1].x)**2+(hero_actor.get_location().y-hero_route[-1].y)**2)<0.5 :# <0.5m
-                break
+        frame_counter = 0
+        while frame_counter < (config_settings['save_frames']+config_settings['ignore_frames']):
 
             # Tick the server
             world.tick()
 
             # 将CARLA界面摄像头跟随ego_vehicle动
-            loc = hero_actor.get_transform().location
-            rot = hero_actor.get_transform().rotation
-            spectator.set_transform(carla.Transform((loc + carla.Location(x=0, y=-5, z=2)), carla.Rotation(yaw=rot.yaw, pitch=-10+rot.pitch, roll=rot.roll)))         
+            loc = hero_actor.get_transform().location + carla.Location(x=0,y=0,z=1.25)
+            rot = hero_actor.get_transform().rotation 
+            spectator.set_transform(carla.Transform(loc,carla.Rotation(roll=rot.roll,yaw=rot.yaw,pitch=-20)))         
 
-            # 处理传感器数据
-            try:
-                save_queue = Queue()   
-                cur_frame = None
-                cur_timestamp = None
-                for i in range(0, len(sensor_actors)):
-                    s_name, s_frame, s_data  = sensor_queue.get(block=True, timeout=1.0)
-                    cur_frame = s_frame
-                    cur_timestamp = s_data.timestamp
-                    cur_ex_matrix = s_data.transform.get_matrix()
-                    if 'ph' in s_name:
-                        data_array = np.frombuffer(s_data.raw_data, dtype=np.dtype("uint8"))
-                        data_array = np.reshape(data_array, (s_data.height, s_data.width, 4))
-                        data_array = data_array[:, :, :3]
-                        save_queue.put((os.path.join(args.save_data_path,'pinhole','{}_{}.png'.format(s_name, s_data.frame)),data_array))
-                    elif 'cm' in s_name:
-                        data_array = np.frombuffer(s_data.raw_data, dtype=np.dtype("uint8"))
-                        data_array = np.reshape(data_array, (s_data.height, s_data.width, 4))
-                        data_array = data_array[:, :, :3]
-                        save_queue.put((os.path.join(args.save_data_path,'cubemap','{}_{}.png'.format(s_name,s_data.frame)),data_array))
-
-
-                while not save_queue.empty():
-                    with total_images.get_lock():
-
-                        total_images.value += 1
+            if frame_counter < config_settings['ignore_frames']:
+                frame_counter += 1
+            else:
+                # 处理传感器数据
+                try:
+                    save_queue = Queue()   
+                    cur_frame = None
+                    cur_timestamp = None
+                    for i in range(0, len(sensor_actors)):
+                        s_name, s_frame, s_data  = sensor_queue.get(block=True, timeout=1.0)
+                        cur_frame = s_frame
+                        cur_timestamp = s_data.timestamp
+                        cur_ex_matrix = s_data.transform.get_matrix()
+                        if 'ph' in s_name:
+                            data_array = np.frombuffer(s_data.raw_data, dtype=np.dtype("uint8"))
+                            data_array = np.reshape(data_array, (s_data.height, s_data.width, 4))
+                            data_array = data_array[:, :, :3]
+                            save_queue.put((os.path.join(args.save_data_path,'pinhole','{}_{}.png'.format(s_name, s_data.frame)),data_array))
+                        elif 'cm' in s_name:
+                            data_array = np.frombuffer(s_data.raw_data, dtype=np.dtype("uint8"))
+                            data_array = np.reshape(data_array, (s_data.height, s_data.width, 4))
+                            data_array = data_array[:, :, :3]
+                            save_queue.put((os.path.join(args.save_data_path,'cubemap','{}_{}.png'.format(s_name,s_data.frame)),data_array))
+                    frame_counter += 1
+                    while not save_queue.empty():
                         path, data= save_queue.get()
                         transQ.put((path,data))
-                
-                write_strs.append(f'\n| {cur_frame} | {str(cur_timestamp)}  |{str(cur_ex_matrix)}  |')
-                transQ.join()
-            
-            except Empty:
-                logger.warning("Some of the sensor information is missed!")
-        
-        
-    
+                    transQ.join()
+                    write_strs.append(f'\n| {cur_frame} | {str(cur_timestamp)}  |{str(cur_ex_matrix)}  |')
+
+                    logger.info('Processed Frames: (%d)/(%d) time_use: %fs',frame_counter-config_settings['ignore_frames'],config_settings['save_frames'],time.time()-start_time)
+
+                except Empty:
+                    logger.warning("Some of the sensor information is missed!")
     finally:
         
         world.apply_settings(original_settings)
-        traffic_manager.set_synchronous_mode(False)
+        tm_setting_list = config_settings['scene_config']["traffic_mananger_setting"]
+        for tm_setting in tm_setting_list:
+            tm = client.get_trafficmanager(tm_setting["port"])
+            tm.set_synchronous_mode(False)
         
         logger.info('Destroying %d sensors' % len(sensor_actors))
         for sensor in sensor_actors:
@@ -121,53 +121,33 @@ def producer(transQ:JoinableQueue, total_images:Value):
         
         
 
-def consumuer(transQ:JoinableQueue, total_images, consume_images, start_time):
-
-    # 设置日志输出
-    logger = logging.getLogger(f"Consumer")
-    logger.setLevel(logging.INFO)
-    log_format = logging.Formatter('[%(name)s][%(levelname)s][%(message)s]')
-    log_stream = logging.StreamHandler()
-    log_stream.setLevel(logging.INFO)
-    log_stream.setFormatter(log_format)
-    logger.addHandler(log_stream)
-
+def consumuer(transQ:JoinableQueue):
     while True :
         if not transQ.qsize() == 0:
-            with consume_images.get_lock():
-                path, data= transQ.get()
-                cv2.imwrite(path,data)
-                consume_images.value += 1
-                logger.info('Images:(%d)/(%d) time_use: %fs',consume_images.value, total_images.value,time.time()-start_time)
-                transQ.task_done()
+            path, data= transQ.get()
+            cv2.imwrite(path,data)
+            transQ.task_done()
     
 
 
 if __name__ == '__main__':
 
     transQ = JoinableQueue()
-    total_images = Value('Q', 0)
-    consume_images = Value('Q', 0)
     start_time = time.time()
 
-    prod = Process(target=producer,args=(transQ,total_images))
-    con1 = Process(target=consumuer,args=(transQ,total_images, consume_images, start_time))
-    con2 = Process(target=consumuer,args=(transQ,total_images, consume_images, start_time))
-    con3 = Process(target=consumuer,args=(transQ,total_images, consume_images, start_time))
-    con4 = Process(target=consumuer,args=(transQ,total_images, consume_images, start_time))
+    prod = Process(target=producer,args=(transQ,start_time))
+    con1 = Process(target=consumuer,args=(transQ,))
+    con2 = Process(target=consumuer,args=(transQ,))
 
     con1.daemon=True
     con2.daemon=True
-    con3.daemon=True
-    con4.daemon=True
 
     prod.start()
 
     con1.start()
     con2.start()
-    con3.start()
-    con4.start()
     
     prod.join()  # 等待生产和消费完成，主线程结束
-
+    
+    os.system("PAUSE")
     print('Exit Main Process')

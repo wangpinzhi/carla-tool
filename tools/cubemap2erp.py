@@ -88,3 +88,4 @@ if __name__ == '__main__':
                 print('\r', f'Total Frames:  {total_steps}   Processed Frames: {step}   Left Frames:   {total_steps-step}', end=' ', file=sys.stdout, flush=True)
                 step = step + 1
     print('',end='\n')
+    os.system('PAUSE')

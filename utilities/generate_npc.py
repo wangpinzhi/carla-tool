@@ -56,15 +56,19 @@ def generate_vehicle(client, gen_list, args):
         else:
             spwan_point = spawn_points[vehicle_setting["spawn_points_index"]]
 
+        # get blueprint 
+        if vehicle_setting['random_bluerint']:
+            vehicle_bp = random.choice(blueprint_library.filter('vehicle.*.*'))
+        else:
+            vehicle_bp = blueprint_library.find(vehicle_setting["blueprint"])
+        
         batch.append(
-            SpawnActor(
-                blueprint_library.find(vehicle_setting["blueprint"]), spwan_point
-            ).then(
-                SetAutopilot(FutureActor, vehicle_setting["autopilot"], args.traffic_manager_port)
+            SpawnActor(vehicle_bp, spwan_point).then(
+                SetAutopilot(FutureActor, vehicle_setting["autopilot"], vehicle_setting["tm_port"])
             )
         )
     
-    for response in client.apply_batch_sync(batch, args.sync_mode):
+    for response in client.apply_batch_sync(batch, world.get_settings().synchronous_mode):
         if response.error:
             logging.error(response.error)
         else:
@@ -87,7 +91,10 @@ def generate_walker(client, gen_list, args):
     walker_speed = []
 
     for walker_setting in gen_list:
-        walker_bp = world.get_blueprint_library().find(walker_setting["blueprint"])
+        if walker_setting['random_bluerint']:
+            walker_bp = random.choice(world.get_blueprint_library().filter('walker.pedestrian.*'))
+        else:
+            walker_bp = world.get_blueprint_library().find(walker_setting["blueprint"])
         # set as not invincible
         if walker_bp.has_attribute('is_invincible'):
             walker_bp.set_attribute('is_invincible', 'false')
@@ -106,7 +113,7 @@ def generate_walker(client, gen_list, args):
         
         walker_transform = carla.Transform(
             carla.Location(x=walker_setting["spawn_points_x"],y=walker_setting["spawn_points_y"],z=walker_setting["spawn_points_z"]),
-            carla.Rotation(0,0,0)
+            carla.Rotation(roll=walker_setting["spawn_points_roll"],pitch=walker_setting["spawn_points_pitch"],yaw=walker_setting["spawn_points_yaw"])
         ) 
         batch.append(SpawnActor(walker_bp,walker_transform))
 
@@ -142,7 +149,7 @@ def generate_walker(client, gen_list, args):
     all_actors = world.get_actors(all_id)
 
     # wait for a tick to ensure client receives the last transform of the walkers we have just created
-    if not args.sync_mode:
+    if not world.get_settings().synchronous_mode:
         world.wait_for_tick()
     else:
         world.tick()

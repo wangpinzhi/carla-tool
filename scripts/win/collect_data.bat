@@ -2,12 +2,7 @@
 
 @REM Variables
 set MAP=Town10
-set ROOT_PATH=output/%MAP%_demo3
+set ROOT_PATH=output/%MAP%_demo_100frames
 
-start python tools/sim_run.py   --sync_mode^
-                                --fixed_delta_time 0.05^
-                                --save_data_path "%ROOT_PATH%"^
-                                --sensor_config_path "configs/demo3/sensor_config.json"^
-                                --scene_config_path "configs/demo3/scene_config.json"
-
-pause
+start python tools/sim_run.py   --save_data_path "%ROOT_PATH%"^
+                                --config_path "output/Town10_demo_100frames/demo_config.json"

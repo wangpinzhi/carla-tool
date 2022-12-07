@@ -17,18 +17,9 @@ def get_args():
     # basic settings
     parser.add_argument('--server_ip', type=str, default='127.0.0.1', help='the host ip of carla server')
     parser.add_argument('--server_port', type=int, default=2000, help='the port of carla server listen')
-    parser.add_argument('--reload_map', action='store_true', default=False, help='decide whether reload map')
-    parser.add_argument('--map', type=str, default='Town01', choices=['Town01', 'Town02', 'Town03', 'Town04', 'Town05', 'Town06', 'Town07', 'Town08', 'Town09', 'Town10'])
-    parser.add_argument('--sync_mode', action='store_true', default=False, help='decide whether use sync mode')
-    parser.add_argument('--fixed_delta_time', type=float ,default=0.05, help='fixed_delta_time of the server')
-    parser.add_argument('--traffic_manager_port', type= int, default=8000, help='the port number of the traffic manager')
-    parser.add_argument('--no-rendering',action='store_true',default=False,help='Activate no rendering mode')
-
 
     # collect settings
-    parser.add_argument('--frames', type=int, default=5000, help='the frames of collect data')
-    parser.add_argument('--sensor_config_path', type=str, default='configs\sensor_config.json', help='the path of config file')
-    parser.add_argument('--scene_config_path',type=str,default='configs/scene_configs/demo1.json',help='the path of scene_config file')
+    parser.add_argument('--config_path', type=str, default='configs/demo_config.json', help='the path of config file')
     parser.add_argument('--save_data_path', type=str, default='output_data_maskcar', help='the path for saving data')
 
     # npc setttings
@@ -50,8 +41,8 @@ def get_args():
 def config_sensors(world, target_vehicle, sensor_queue, args):
 
     # read config json (sensor_config.json)
-    with open(args.sensor_config_path,'r') as f:
-        sensor_settings = json.load(f)
+    with open(args.config_path,'r') as f:
+        sensor_settings = json.load(f)["sensor_config"]
 
     # set data save path
     cubemap_save_path = os.path.join(args.save_data_path, 'cubemap')
@@ -76,8 +67,8 @@ def config_sensors(world, target_vehicle, sensor_queue, args):
 def config_sim_scene(args):
 
     # read config json
-    with open(args.scene_config_path,'r') as f:
-        scene_settings = json.load(f)
+    with open(args.config_path,'r') as f:
+        scene_settings = json.load(f)["scene_config"]
     
     # get client
     client = carla.Client(args.server_ip, args.server_port)
@@ -91,36 +82,31 @@ def config_sim_scene(args):
     old_map = re.findall(reg,world.get_map().name)[0]
     if old_map != scene_settings["map"]:
         world = client.load_world(scene_settings["map"])
-        logging.info('reload world map: %s->%s',old_map[0],scene_settings["map"])
+        print('reload world map: {}->%{}'.format(old_map[0],scene_settings["map"]))
     
     # 应用设置
     original_settings = world.get_settings()
     settings = world.get_settings()
     settings.actor_active_distance = 2000
-    settings.synchronous_mode = args.sync_mode # Enables synchronous mode
-    if args.sync_mode:
-        settings.fixed_delta_seconds = args.fixed_delta_time
-    if args.no_rendering:
-        settings.no_rendering_mode = True
+    settings.synchronous_mode = scene_settings['sync_mode'] # Enables synchronous mode
+    if settings.synchronous_mode:
+        settings.fixed_delta_seconds = scene_settings['fixed_delta_time']
     world.apply_settings(settings)
 
-    # 获得spectator        
-    spectator = world.get_spectator() 
-        
     # 获取world蓝图
     blueprint_library = world.get_blueprint_library()
     
     # Traffic Manager
-    traffic_manager = client.get_trafficmanager(args.traffic_manager_port)
-    
-    traffic_manager.set_random_device_seed(62)
-    traffic_manager.set_global_distance_to_leading_vehicle(1.0)
-    traffic_manager.set_synchronous_mode(args.sync_mode)
-
-    traffic_manager.set_hybrid_physics_mode(True)
-    traffic_manager.set_hybrid_physics_radius(70.0)
-    traffic_manager.set_respawn_dormant_vehicles(True)
-    traffic_manager.set_boundaries_respawn_dormant_vehicles(25,700)
+    tm_setting_list = scene_settings["traffic_mananger_setting"]
+    for tm_setting in tm_setting_list:
+        tm = client.get_trafficmanager(tm_setting["port"])
+        tm.set_random_device_seed(tm_setting["random_device_seed"])
+        tm.set_global_distance_to_leading_vehicle(tm_setting["global_distance_to_leading_vehicle"])
+        tm.set_synchronous_mode(scene_settings["sync_mode"])
+        tm.set_hybrid_physics_mode(True)
+        tm.set_hybrid_physics_radius(70.0)
+        tm.set_respawn_dormant_vehicles(True)
+        tm.set_boundaries_respawn_dormant_vehicles(25,700)
     
     
     # 获得spawn points
@@ -130,21 +116,24 @@ def config_sim_scene(args):
     hero_bp = blueprint_library.find(scene_settings["hero_actor"]["blueprint"])
     hero_bp.set_attribute('role_name', 'hero')
     hero_actor = world.spawn_actor(hero_bp,spawn_points[scene_settings["hero_actor"]["spawn_points_index"]])
-    route = [spawn_points[ind].location for ind in scene_settings["hero_actor"]["route_indices"]]
-    hero_actor.set_autopilot(scene_settings["hero_actor"]["autopilot"], args.traffic_manager_port)
-    
-    # Set parameters of TM hero control
-    traffic_manager.ignore_lights_percentage(hero_actor, 100)
-    traffic_manager.random_left_lanechange_percentage(hero_actor, 0)
-    traffic_manager.random_right_lanechange_percentage(hero_actor, 0)
-    traffic_manager.auto_lane_change(hero_actor, True)
-    traffic_manager.set_path(hero_actor, route) # 设置车辆行驶路线
+    hero_actor.set_autopilot(scene_settings["hero_actor"]["autopilot"], scene_settings["hero_actor"]["tm_port"])
+    if scene_settings["hero_actor"]["autopilot"]:
+        route = [spawn_points[ind].location for ind in scene_settings["hero_actor"]["route_indices"]]
+        tm = client.get_trafficmanager(scene_settings["hero_actor"]["tm_port"])
+        # Set parameters of TM hero actor control
+        tm.ignore_lights_percentage(hero_actor, scene_settings["hero_actor"]["ignore_lights_percentage"])
+        tm.random_left_lanechange_percentage(hero_actor, scene_settings["hero_actor"]["random_left_lanechange_percentage"])
+        tm.random_right_lanechange_percentage(hero_actor, scene_settings["hero_actor"]["random_right_lanechange_percentage"])
+        tm.auto_lane_change(hero_actor, scene_settings["hero_actor"]["auto_lane_change"])
+        tm.set_path(hero_actor, route) # 设置车辆行驶路线
+    else:
+        print("hero actor not autopilot!")
 
     # gen vehicle npc
     npc_vehicle_list = generate_vehicle(client,scene_settings["vehicle_npc"],args)
     npc_walker_list, npc_walker_id, npc_walker_actors = generate_walker(client,scene_settings["walker_npc"],args)
 
-    return hero_actor, spectator, route, client, original_settings, npc_vehicle_list, npc_walker_list, npc_walker_id, npc_walker_actors
+    return hero_actor, client, original_settings, npc_vehicle_list, npc_walker_list, npc_walker_id, npc_walker_actors
 
     
 

@@ -7,48 +7,47 @@ sys.path.insert(0, parent_path)
 import carla
 import random,math
 from utilities import get_args, config_sim_scene
-import logging,time
+import logging,time,json
 
 def main():
 
     args = get_args()
     logging.basicConfig(format='%(levelname)s %(message)s', level=logging.INFO)
-    random.seed(5)
+    with open(args.config_path,'r') as f:
+        config_settings = json.load(f)
+    
+    random.seed(config_settings["random_seed"])
 
     try:
         
-        hero_actor, spectator, hero_route, client, original_settings, npc_vehicle_list, npc_walker_list, npc_walker_id, npc_walker_actors = config_sim_scene(args)
-
-        traffic_manager = client.get_trafficmanager(args.traffic_manager_port)
+        hero_actor, client, original_settings, npc_vehicle_list, npc_walker_list, npc_walker_id, npc_walker_actors = config_sim_scene(args)
         world = client.get_world()
+        spectator = world.get_spectator() 
 
         while True:
-            
-            if math.sqrt((hero_actor.get_location().x-hero_route[-1].x)**2+(hero_actor.get_location().y-hero_route[-1].y)**2)<0.5 :# <0.5m
-                break
+            try:
+                # Tick the server
+                world.tick()
 
-            # Tick the server
-            world.tick()
-
-            # 将CARLA界面摄像头跟随ego_vehicle动
-            loc = hero_actor.get_transform().location
-            rot = hero_actor.get_transform().rotation
-            # 车后视角
-            spectator.set_transform(carla.Transform((loc + carla.Location(x=0, y=-5, z=2)), carla.Rotation(yaw=rot.yaw, pitch=-10+rot.pitch, roll=rot.roll)))
-            
-            # spectator.set_transform(carla.Transform(carla.Location(x=loc.x,y=loc.y,z=35),carla.Rotation(yaw=0,pitch=-90,roll=0))) 
-
-            # if hero_actor.is_at_traffic_light():
-            #    traffic_light = hero_actor.get_traffic_light()
-            #    traffic_light.set_state(carla.TrafficLightState.Green)
-
-            
-            
-    
+                # 将CARLA界面摄像头跟随ego_vehicle动
+                loc = hero_actor.get_transform().location + carla.Location(x=0,y=0,z=1.25)
+                rot = hero_actor.get_transform().rotation 
+                # 车后视角
+                spectator.set_transform(carla.Transform(loc,carla.Rotation(roll=rot.roll,yaw=rot.yaw,pitch=-20)))
+                
+                # spectator.set_transform(carla.Transform(carla.Location(x=loc.x,y=loc.y,z=35),carla.Rotation(yaw=0,pitch=-90,roll=0)))           
+            except Exception as e:
+                print(str(e))
+     
+    except Exception as e:
+                print(str(e))  
     finally:
         
         world.apply_settings(original_settings)
-        traffic_manager.set_synchronous_mode(False)
+        tm_setting_list = config_settings['scene_config']["traffic_mananger_setting"]
+        for tm_setting in tm_setting_list:
+            tm = client.get_trafficmanager(tm_setting["port"])
+            tm.set_synchronous_mode(False)
 
         hero_actor.destroy()
         logging.info("Destroy Actor: hero_actor")
@@ -67,3 +66,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    os.system("PAUSE")
