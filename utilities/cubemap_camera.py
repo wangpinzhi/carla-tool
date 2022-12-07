@@ -1,6 +1,10 @@
 
 import carla
-from utilities.callback_func import cubemap_data_callback
+from queue import Queue
+
+def cubemap_data_callback(sensor_data, sensor_queue:Queue, sensor_name:str, view:str, save_data_path):
+
+    sensor_queue.put((sensor_name+'_'+view, sensor_data.frame, sensor_data))
 
 '''
 get cubemap_camera_rgb actors from dict

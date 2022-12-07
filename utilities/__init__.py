@@ -6,7 +6,7 @@ from utilities.generate_npc import random_generate_vehicle, random_generate_walk
 from utilities.generate_npc import generate_vehicle, generate_walker
 import carla
 import json,re
-import argparse,logging
+import argparse
 import os
 
 

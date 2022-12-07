@@ -1,7 +1,10 @@
 
 import carla
-from utilities.callback_func import pinhole_data_callback
+from queue import Queue
 
+def pinhole_data_callback(sensor_data, sensor_queue:Queue, sensor_name, save_data_path):
+    
+    sensor_queue.put((sensor_name, sensor_data.frame, sensor_data))
 
 '''
 get pinhole_camera_rgb actors from dict
