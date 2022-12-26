@@ -135,6 +135,4 @@ def config_sim_scene(args):
 
     return hero_actor, client, original_settings, npc_vehicle_list, npc_walker_list, npc_walker_id, npc_walker_actors
 
-    
-
-    
+   

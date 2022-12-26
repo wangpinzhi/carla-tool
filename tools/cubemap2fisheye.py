@@ -13,7 +13,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='parameters for cubemap2fisheye')
 
     # basic settings
-    parser.add_argument('--fov', type=int, default=210, help='target fisheye fov')
+    parser.add_argument('--fov', type=int, default=190, help='target fisheye fov')
     parser.add_argument('--cubemap_dir', type=str, default='output_raw_data/cubemap')
     parser.add_argument('--camera', type=str)
     parser.add_argument('--external_path', type=str, default='output_raw_data/external.txt', help='path of external.txt')
@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     args=parser.parse_args()
     
-    c2f = Cubemap2Fisheye(1024, 1024, 1024, 1024, args.fov, use_cuda=args.use_cuda)
+    c2f = Cubemap2Fisheye(1080, 1080, 1080, 1080, args.fov, use_cuda=args.use_cuda)
     
     # get frames
     frames = []
@@ -36,7 +36,7 @@ if __name__ == '__main__':
 
     # get cameras
     
-    cube = np.zeros([6,3,1024,1024], dtype=np.float32)
+    cube = np.zeros([6,3,1080,1080], dtype=np.float32)
 
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
