@@ -7,6 +7,7 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 sys.path.insert(0, parent_path)
 
 from utilities import c2e
+import torch.nn.functional as F
 import argparse
 import os,re,cv2
 import numpy as np
@@ -54,6 +55,28 @@ if __name__ == '__main__':
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
+    # get grid
+    xc = (args.outW-1) / 2
+    yc = (args.outH-1) / 2
+
+    face_x, face_y = np.meshgrid(range(args.outW), range(args.outH))
+    x = face_x - xc
+    y = face_y - yc
+    focal = xc / np.tan(np.radians(args.fov/2))
+    z = np.ones_like(x) * focal
+    x,y,z = x/z, y/z, z/z
+    theta = np.arctan2(x,z).astype(np.float64)
+    phi = np.arctan2(y,np.sqrt(x*x+z*z)).astype(np.float64)
+    theta = theta / np.pi
+    phi = phi / np.pi * 2.0
+    
+    grid = np.stack([theta,phi],axis=-1)
+    grid = np.expand_dims(grid, axis=0)
+    grid = torch.from_numpy(grid)
+    if args.use_cuda:
+        grid = grid.cuda()
+
+
     for frame in frames:
         for idx,view in [(0,'back'),(1,'down'),(2,'front'),(3,'left'),(4,'right'),(5,'up')]:
             raw = cv2.imread(f"{args.cubemap_dir}/{args.camera}_{view}_{frame}.png")
@@ -61,19 +84,16 @@ if __name__ == '__main__':
             raw = np.transpose(raw,(2,0,1))
             cube[idx] = raw
             
-            cube_tensor=torch.from_numpy(cube)
-            out_batch = cubemap2erp.ToEquirecTensor(cube_tensor)
-            out = out_batch.cpu().numpy()
+        cube_tensor=torch.from_numpy(cube)
+        out_erp = cubemap2erp.ToEquirecTensor(cube_tensor)
+        out_pinhole = F.grid_sample(out_erp, grid, mode='bilinear', padding_mode='zeros', align_corners=True)
 
-            out = np.squeeze(out,axis=0)
-            out = np.transpose(out,(1,2,0))
-            out = out.astype(np.uint8)
+        out = out_pinhole.cpu().numpy()
+        out = np.squeeze(out,axis=0)
+        out = np.transpose(out,(1,2,0))
+        out = out.astype(np.uint8)
 
-            persp = mapper.eqruirect2persp(out, args.fov, 0, 0, args.outH, args.outW)
-
-            cv2.imwrite(os.path.join(args.output_dir, f'erp_{cam}_{frame}.png'), persp)
-
-            
-            print('\r', f'Total Frames:  {total_steps}   Processed Frames: {step}   Left Frames:   {total_steps-step}', end=' ', file=sys.stdout, flush=True)
-            step = step + 1
+        cv2.imwrite(os.path.join(args.output_dir, f'erp_{cam}_{frame}.png'), out)
+        print('\r', f'Total Frames:  {total_steps}   Processed Frames: {step}   Left Frames:   {total_steps-step}', end=' ', file=sys.stdout, flush=True)
+        step = step + 1
         

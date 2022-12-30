@@ -46,7 +46,7 @@ def config_sensors(world, target_vehicle, sensor_queue, args):
 
     # set data save path
     cubemap_save_path = os.path.join(args.save_data_path, 'cubemap')
-    pinhole_save_path = os.path.join(args.save_data_path, 'pinhole')
+    pinhole_save_path = os.path.join(args.save_data_path, 'original_pinhole')
     os.makedirs(pinhole_save_path,exist_ok=True)
     os.makedirs(cubemap_save_path,exist_ok=True)
 

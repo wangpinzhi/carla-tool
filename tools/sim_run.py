@@ -74,7 +74,7 @@ def producer(transQ:JoinableQueue, start_time):
                             data_array = np.frombuffer(s_data.raw_data, dtype=np.dtype("uint8"))
                             data_array = np.reshape(data_array, (s_data.height, s_data.width, 4))
                             data_array = data_array[:, :, :3]
-                            save_queue.put((os.path.join(args.save_data_path,'pinhole','{}_{}.png'.format(s_name, s_data.frame)),data_array))
+                            save_queue.put((os.path.join(args.save_data_path,'original_pinhole','{}_{}.png'.format(s_name, s_data.frame)),data_array))
                         elif 'cm' in s_name:
                             data_array = np.frombuffer(s_data.raw_data, dtype=np.dtype("uint8"))
                             data_array = np.reshape(data_array, (s_data.height, s_data.width, 4))
@@ -138,14 +138,20 @@ if __name__ == '__main__':
     prod = Process(target=producer,args=(transQ,start_time))
     con1 = Process(target=consumuer,args=(transQ,))
     con2 = Process(target=consumuer,args=(transQ,))
+    con3 = Process(target=consumuer,args=(transQ,))
+    con4 = Process(target=consumuer,args=(transQ,))
 
     con1.daemon=True
     con2.daemon=True
+    con3.daemon=True
+    con4.daemon=True
 
     prod.start()
 
     con1.start()
     con2.start()
+    con3.start()
+    con4.start()
     
     prod.join()  # 等待生产和消费完成，主线程结束
     

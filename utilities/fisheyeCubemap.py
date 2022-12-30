@@ -82,7 +82,7 @@ class Fisheye2Cubemap:
 
 
 class Cubemap2Fisheye:
-  def __init__(self, cube_face_h, cube_face_w, fish_h, fish_w, fish_FoV, Rot=np.identity(3, dtype=np.float32),use_cuda=False):
+  def __init__(self, cube_face_h, cube_face_w, fish_h, fish_w, fish_FoV, Rot=np.identity(3, dtype=np.float32), use_cuda=False):
 
     if use_cuda:
       self.device = torch.device('cuda:0')
