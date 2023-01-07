@@ -7,6 +7,7 @@ from utilities import c2e
 import argparse
 import glob,os,re
 import numpy as np
+from tqdm import tqdm
 import cv2
 import math
 from omnicv import fisheyeImgConv
@@ -29,15 +30,13 @@ if __name__ == '__main__':
     args=parser.parse_args()
     
     cubemap2erp = c2e(cubeW=args.cubeW, outH=args.out_height, outW=args.out_height*2,CUDA=args.use_cuda)
-    if not os.path.exists(r'cube_help.npy'):
-        cube_cos = np.zeros((args.cubeW,args.cubeW),dtype=np.float64)
-        D = (args.cubeW-1)/2
-        for i in range(args.cubeW):
-            for j in range(args.cubeW):
-                cube_cos[i][j] = math.sqrt(D*D/((i-D)*(i-D)+(j-D)*(j-D)+D*D))
-        np.save(r'cube_help.npy',cube_cos)
-    else:
-        cube_cos = np.load(r'cube_help.npy')
+
+    cube_cos = np.zeros((args.cubeW,args.cubeW),dtype=np.float64)
+    D = (args.cubeW-1)/2
+    for i in range(args.cubeW):
+        for j in range(args.cubeW):
+            cube_cos[i][j] = math.sqrt(D*D/((i-D)*(i-D)+(j-D)*(j-D)+D*D))
+        
     
     # get frames
     frames = []
@@ -59,10 +58,7 @@ if __name__ == '__main__':
     if not os.path.exists(outputVis_dir):
         os.makedirs(outputVis_dir)
 
-    step = 1
-    total_steps = len(frames)
-
-    for frame in frames:
+    for frame in tqdm(frames, desc='Cubemap2ERP Processing ', unit='frames'):
         #back down front left right up
         #step 1 readcube
         if 'depth' in args.camera:
@@ -88,19 +84,19 @@ if __name__ == '__main__':
                 
             im.save(os.path.join(outputVis_dir, f'erpVis_{cam}_{frame}.png'))
             np.save(os.path.join(args.output_dir, f'erp_{cam}_{frame}.npy'),out)
-            print('\r', f'Total Frames:  {total_steps}   Processed Frames: {step}   Left Frames:   {total_steps-step}', end=' ', file=sys.stdout, flush=True)
-            step = step + 1
+            
         
         else:
 
             cube = np.zeros([6,3,args.cubeW,args.cubeW], dtype=np.float64)
             mapper = fisheyeImgConv()
 
-            for idx,view in [(0,'back'),(1,'down'),(2,'front'),(3,'left'),(4,'right'),(5,'up')]:
-                raw = cv2.imread(f"{args.cubemap_dir}/{args.camera}_{view}_{frame}.png")
-                raw = raw.astype(np.float64)
-                raw = np.transpose(raw,(2,0,1))
-                cube[idx] = raw
+            cube[0,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_back_{frame}.png"),(2,0,1))
+            cube[1,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_down_{frame}.png"),(2,0,1))
+            cube[2,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_front_{frame}.png"),(2,0,1))
+            cube[3,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_left_{frame}.png"),(2,0,1))
+            cube[4,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_right_{frame}.png"),(2,0,1))
+            cube[5,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_up_{frame}.png"),(2,0,1))
             
             cube_tensor=torch.from_numpy(cube)
             out_batch = cubemap2erp.ToEquirecTensor(cube_tensor)
@@ -110,14 +106,7 @@ if __name__ == '__main__':
             out = np.transpose(out,(1,2,0))
             out = out.astype(np.uint8)
 
-            persp = mapper.eqruirect2persp(out, 100, 180, 0, 1560, 2880)
+            cv2.imwrite(os.path.join(args.output_dir, f'erp_{cam}_{frame}.png'), out)
 
-            cv2.imwrite(os.path.join(args.output_dir, f'erp_{cam}_{frame}.png'), persp)
 
-            
-
-            print('\r', f'Total Frames:  {total_steps}   Processed Frames: {step}   Left Frames:   {total_steps-step}', end=' ', file=sys.stdout, flush=True)
-            step = step + 1
-
-    print('',end='\n')
     os.system('PAUSE')

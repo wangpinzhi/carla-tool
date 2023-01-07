@@ -1,40 +1,9 @@
-from utilities.pinhole_camera import get_pinhole_camera_rgb
+from utilities.pinhole_camera import get_pinhole_camera_rgb, get_pinhole_camera_depth
 from utilities.cubemap_camera import get_cubemap_camera_rgb, get_cubemap_camera_depth
-from utilities.fisheyeCubemap import Cubemap2Fisheye
-from utilities.erpCubemap import c2e
-from utilities.generate_npc import random_generate_vehicle, random_generate_walker
 from utilities.generate_npc import generate_vehicle, generate_walker
 import carla
 import json,re
-import argparse
 import os
-
-
-
-def get_args():
-    parser = argparse.ArgumentParser(description='parameters for collecting data')
-
-    # basic settings
-    parser.add_argument('--server_ip', type=str, default='127.0.0.1', help='the host ip of carla server')
-    parser.add_argument('--server_port', type=int, default=2000, help='the port of carla server listen')
-
-    # collect settings
-    parser.add_argument('--config_path', type=str, default='configs/demo_config.json', help='the path of config file')
-    parser.add_argument('--save_data_path', type=str, default='output_data_maskcar', help='the path for saving data')
-
-    # npc setttings
-    parser.add_argument('-n', '--number-of-vehicles', metavar='N', default=30, type=int, help='Number of vehicles (default: 30)')
-    parser.add_argument('-w', '--number-of-walkers', metavar='W', default=10, type=int, help='Number of walkers (default: 10)')
-    parser.add_argument('--safe', action='store_true', help='Avoid spawning vehicles prone to accidents')
-    parser.add_argument('--filterv',metavar='PATTERN',default='vehicle.*',help='Filter vehicle model (default: "vehicle.*")')
-    parser.add_argument('--generationv',metavar='G',default='All',help='restrict to certain vehicle generation (values: "1","2","All" - default: "All")')
-    parser.add_argument('--filterw',metavar='PATTERN',default='walker.pedestrian.*',help='Filter pedestrian type (default: "walker.pedestrian.*")')
-    parser.add_argument('--generationw',metavar='G',default='2',help='restrict to certain pedestrian generation (values: "1","2","All" - default: "2")')
-    parser.add_argument('--seedw',metavar='S', default=0, type=int, help='Set the seed for pedestrians module')
-
-
-    return parser.parse_args()
-
 
 
 
@@ -46,20 +15,23 @@ def config_sensors(world, target_vehicle, sensor_queue, args):
 
     # set data save path
     cubemap_save_path = os.path.join(args.save_data_path, 'cubemap')
-    pinhole_save_path = os.path.join(args.save_data_path, 'original_pinhole')
+    pinhole_save_path = os.path.join(args.save_data_path, 'pinhole')
     os.makedirs(pinhole_save_path,exist_ok=True)
     os.makedirs(cubemap_save_path,exist_ok=True)
 
     # config_pinhole_camera_rgb
-    pinhole_camera_rgb_list = get_pinhole_camera_rgb(world,target_vehicle, sensor_queue, sensor_settings["pinhole_rgb"], pinhole_save_path)
+    pinhole_camera_rgb_list = get_pinhole_camera_rgb(world,target_vehicle, sensor_queue, sensor_settings["pinhole_rgb"])
+
+    # config_pinhole_camera_depth
+    pinhole_camera_depth_list = get_pinhole_camera_depth(world,target_vehicle, sensor_queue, sensor_settings["pinhole_depth"])
 
     # config_cubemap_camera_rgb
-    cubemap_camera_rgb_list = get_cubemap_camera_rgb(world,target_vehicle, sensor_queue, sensor_settings["cubemap_rgb"], cubemap_save_path)
+    cubemap_camera_rgb_list = get_cubemap_camera_rgb(world,target_vehicle, sensor_queue, sensor_settings["cubemap_rgb"])
 
     # config_cubemap_camera_depth
-    cubemap_camera_depth_list = get_cubemap_camera_depth(world,target_vehicle, sensor_queue, sensor_settings["cubemap_depth"], cubemap_save_path)
+    cubemap_camera_depth_list = get_cubemap_camera_depth(world,target_vehicle, sensor_queue, sensor_settings["cubemap_depth"])
 
-    sensor_actors = pinhole_camera_rgb_list + cubemap_camera_rgb_list + cubemap_camera_depth_list
+    sensor_actors = pinhole_camera_rgb_list + cubemap_camera_rgb_list + cubemap_camera_depth_list+pinhole_camera_depth_list
     print('sensors:', len(sensor_actors))
 
     return sensor_actors
@@ -78,11 +50,10 @@ def config_sim_scene(args):
     world = client.get_world()
 
     # 获取当前map
-    reg = re.compile('Town\d\d')
-    old_map = re.findall(reg,world.get_map().name)[0]
+    old_map = world.get_map().name
     if old_map != scene_settings["map"]:
         world = client.load_world(scene_settings["map"])
-        print('reload world map: {}->%{}'.format(old_map[0],scene_settings["map"]))
+        print('reload world map: {}->{}'.format(old_map, scene_settings["map"]))
     
     # 应用设置
     original_settings = world.get_settings()
@@ -115,7 +86,19 @@ def config_sim_scene(args):
     # 设置hero car
     hero_bp = blueprint_library.find(scene_settings["hero_actor"]["blueprint"])
     hero_bp.set_attribute('role_name', 'hero')
-    hero_actor = world.spawn_actor(hero_bp,spawn_points[scene_settings["hero_actor"]["spawn_points_index"]])
+    
+    if scene_settings["hero_actor"]["spawn_points_index"] == -1:
+        loc_x = scene_settings["hero_actor"]["spawn_points"]['loc_x']
+        loc_y = scene_settings["hero_actor"]["spawn_points"]['loc_y']
+        loc_z = scene_settings["hero_actor"]["spawn_points"]['loc_z']
+        rot_p = scene_settings["hero_actor"]["spawn_points"]['rot_p']
+        rot_y = scene_settings["hero_actor"]["spawn_points"]['rot_y']
+        rot_r = scene_settings["hero_actor"]["spawn_points"]['rot_r']
+        hero_spawn_point = carla.Transform(carla.Location(loc_x,loc_y,loc_z),carla.Rotation(rot_p,rot_y,rot_r))
+    else:
+        hero_spawn_point = spawn_points[scene_settings["hero_actor"]["spawn_points_index"]]
+            
+    hero_actor = world.spawn_actor(hero_bp,hero_spawn_point)
     hero_actor.set_autopilot(scene_settings["hero_actor"]["autopilot"], scene_settings["hero_actor"]["tm_port"])
     if scene_settings["hero_actor"]["autopilot"]:
         route = [spawn_points[ind].location for ind in scene_settings["hero_actor"]["route_indices"]]

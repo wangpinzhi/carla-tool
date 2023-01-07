@@ -9,8 +9,9 @@ sys.path.insert(0, parent_path)
 from utilities import c2e
 import torch.nn.functional as F
 import argparse
-import os,re,cv2
+import os,re,cv2,glob
 import numpy as np
+from tqdm import tqdm
 
 
 if __name__ == '__main__':
@@ -49,9 +50,6 @@ if __name__ == '__main__':
     cubemap2erp = c2e(cubeW=args.cubeW, outH=args.cubeW, outW=args.cubeW*2,CUDA=args.use_cuda)
     mapper = fisheyeImgConv()
 
-    step = 1
-    total_steps = len(frames)
-
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
@@ -77,12 +75,14 @@ if __name__ == '__main__':
         grid = grid.cuda()
 
 
-    for frame in frames:
-        for idx,view in [(0,'back'),(1,'down'),(2,'front'),(3,'left'),(4,'right'),(5,'up')]:
-            raw = cv2.imread(f"{args.cubemap_dir}/{args.camera}_{view}_{frame}.png")
-            raw = raw.astype(np.float64)
-            raw = np.transpose(raw,(2,0,1))
-            cube[idx] = raw
+    for frame in tqdm(frames, desc='Cubemap2Pinhole Processing ', unit='frames'):
+
+        cube[0,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_back_{frame}.png"),(2,0,1))
+        cube[1,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_down_{frame}.png"),(2,0,1))
+        cube[2,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_front_{frame}.png"),(2,0,1))
+        cube[3,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_left_{frame}.png"),(2,0,1))
+        cube[4,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_right_{frame}.png"),(2,0,1))
+        cube[5,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_up_{frame}.png"),(2,0,1))
             
         cube_tensor=torch.from_numpy(cube)
         out_erp = cubemap2erp.ToEquirecTensor(cube_tensor)
@@ -93,7 +93,6 @@ if __name__ == '__main__':
         out = np.transpose(out,(1,2,0))
         out = out.astype(np.uint8)
 
-        cv2.imwrite(os.path.join(args.output_dir, f'erp_{cam}_{frame}.png'), out)
-        print('\r', f'Total Frames:  {total_steps}   Processed Frames: {step}   Left Frames:   {total_steps-step}', end=' ', file=sys.stdout, flush=True)
-        step = step + 1
+        cv2.imwrite(os.path.join(args.output_dir, f'ph_{cam}_{frame}.png'), out)
+        
         

@@ -5,16 +5,46 @@ parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 sys.path.insert(0, parent_path)
 
 import carla
-import random,math,cv2 
-from utilities import get_args, config_sensors, config_sim_scene
+import random, cv2
+from utilities import config_sensors, config_sim_scene
 from queue import Queue, Empty
-from multiprocessing import JoinableQueue,Process,Value
-import logging,json
+from multiprocessing import JoinableQueue,Process, TimeoutError, ProcessError
+import logging,json,argparse
 import numpy as np
 
-def producer(transQ:JoinableQueue, start_time):
 
-    args = get_args()
+
+
+def get_args():
+    parser = argparse.ArgumentParser(description='parameters for collecting data')
+
+    # basic settings
+    parser.add_argument('--server_ip', type=str, default='127.0.0.1', help='the host ip of carla server')
+    parser.add_argument('--server_port', type=int, default=2000, help='the port of carla server listen')
+
+    # collect settings
+    parser.add_argument('--config_path', type=str, default='configs/demo_config.json', help='the path of config file')
+    parser.add_argument('--save_data_path', type=str, default='output_data_maskcar', help='the path for saving data')
+
+    # npc setttings
+    parser.add_argument('-n', '--number-of-vehicles', metavar='N', default=30, type=int, help='Number of vehicles (default: 30)')
+    parser.add_argument('-w', '--number-of-walkers', metavar='W', default=10, type=int, help='Number of walkers (default: 10)')
+    parser.add_argument('--safe', action='store_true', help='Avoid spawning vehicles prone to accidents')
+    parser.add_argument('--filterv',metavar='PATTERN',default='vehicle.*',help='Filter vehicle model (default: "vehicle.*")')
+    parser.add_argument('--generationv',metavar='G',default='All',help='restrict to certain vehicle generation (values: "1","2","All" - default: "All")')
+    parser.add_argument('--filterw',metavar='PATTERN',default='walker.pedestrian.*',help='Filter pedestrian type (default: "walker.pedestrian.*")')
+    parser.add_argument('--generationw',metavar='G',default='2',help='restrict to certain pedestrian generation (values: "1","2","All" - default: "2")')
+    parser.add_argument('--seedw',metavar='S', default=0, type=int, help='Set the seed for pedestrians module')
+
+    # multi processer setting
+    parser.add_argument('--num_workers', type=int, default=1)
+
+    return parser.parse_args()
+
+
+
+def producer(transQ:JoinableQueue, args):
+
     with open(args.config_path,'r') as f:
         config_settings = json.load(f)
     
@@ -44,9 +74,10 @@ def producer(transQ:JoinableQueue, start_time):
         
         logger.info('spawned %d vehicles and %d walkers',len(npc_vehicle_list), len(npc_walker_list))   
 
-        write_strs = ['|  Frame   |  Timestamp |External Matrix  |']
+        write_strs = ['|  Frame   |  Timestamp | Hero Car External Matrix  |']
         
         frame_counter = 0
+        cur_frame = 1
         while frame_counter < (config_settings['save_frames']+config_settings['ignore_frames']):
 
             # Tick the server
@@ -56,41 +87,44 @@ def producer(transQ:JoinableQueue, start_time):
             loc = hero_actor.get_transform().location + carla.Location(x=0,y=0,z=1.25)
             rot = hero_actor.get_transform().rotation 
             spectator.set_transform(carla.Transform(loc,carla.Rotation(roll=rot.roll,yaw=rot.yaw,pitch=-20)))         
+            
+            # 处理传感器数据
+            cur_ex_matrix = hero_actor.get_transform().get_matrix()
+            try:
+                # save_queue = Queue()   
+                cur_timestamp = None
+                data_pre_time = 0
+                total_start_time = time.time()
 
-            if frame_counter < config_settings['ignore_frames']:
+                for i in range(0, len(sensor_actors)):
+                    s_name, s_frame, s_data  = sensor_queue.get(block=True, timeout=None)
+                    if frame_counter < config_settings['ignore_frames']:
+                        continue
+                    cur_timestamp = s_data.timestamp
+
+                    start_time  = time.time()
+                    data_array = np.frombuffer(s_data.raw_data, dtype=np.dtype("uint8"))
+                    data_array = np.reshape(data_array, (s_data.height, s_data.width, 4))
+                    data_array = data_array[:, :, :3]
+                    data_pre_time += (time.time()-start_time)
+
+                    if 'ph' in s_name:
+                        transQ.put((os.path.join(args.save_data_path,'pinhole','{}_{}.png'.format(s_name, cur_frame)), data_array))
+                    elif 'cm_rgb' in s_name:
+                        transQ.put((os.path.join(args.save_data_path,'cubemap','{}_{}.jpg'.format(s_name, cur_frame)), data_array))
+                    elif 'cm_depth' in s_name:
+                        transQ.put((os.path.join(args.save_data_path,'cubemap','{}_{}.npz'.format(s_name, cur_frame)), data_array))
+                transQ.join()
+
+                if frame_counter >= config_settings['ignore_frames']:
+                    write_strs.append(f'\n| {cur_frame} | {str(cur_timestamp)}  | {str(cur_ex_matrix)}  |')   
+                cur_frame += 1
                 frame_counter += 1
-            else:
-                # 处理传感器数据
-                try:
-                    save_queue = Queue()   
-                    cur_frame = None
-                    cur_timestamp = None
-                    for i in range(0, len(sensor_actors)):
-                        s_name, s_frame, s_data  = sensor_queue.get(block=True, timeout=1.0)
-                        cur_frame = s_frame
-                        cur_timestamp = s_data.timestamp
-                        cur_ex_matrix = s_data.transform.get_matrix()
-                        if 'ph' in s_name:
-                            data_array = np.frombuffer(s_data.raw_data, dtype=np.dtype("uint8"))
-                            data_array = np.reshape(data_array, (s_data.height, s_data.width, 4))
-                            data_array = data_array[:, :, :3]
-                            save_queue.put((os.path.join(args.save_data_path,'original_pinhole','{}_{}.png'.format(s_name, s_data.frame)),data_array))
-                        elif 'cm' in s_name:
-                            data_array = np.frombuffer(s_data.raw_data, dtype=np.dtype("uint8"))
-                            data_array = np.reshape(data_array, (s_data.height, s_data.width, 4))
-                            data_array = data_array[:, :, :3]
-                            save_queue.put((os.path.join(args.save_data_path,'cubemap','{}_{}.png'.format(s_name,s_data.frame)),data_array))
-                    frame_counter += 1
-                    while not save_queue.empty():
-                        path, data= save_queue.get()
-                        transQ.put((path,data))
-                    transQ.join()
-                    write_strs.append(f'\n| {cur_frame} | {str(cur_timestamp)}  |{str(cur_ex_matrix)}  |')
+                logger.info('Processed Frames: (%d)/(%d) | Data Prepare Time_use: %fs | Total one frame time_use: %fs',frame_counter,config_settings['save_frames']+config_settings['ignore_frames'], data_pre_time/len(sensor_actors),time.time()-total_start_time)
 
-                    logger.info('Processed Frames: (%d)/(%d) time_use: %fs',frame_counter-config_settings['ignore_frames'],config_settings['save_frames'],time.time()-start_time)
+            except Empty:
+                logger.warning("Some of the sensor information is missed!")
 
-                except Empty:
-                    logger.warning("Some of the sensor information is missed!")
     finally:
         
         world.apply_settings(original_settings)
@@ -125,35 +159,39 @@ def consumuer(transQ:JoinableQueue):
     while True :
         if not transQ.qsize() == 0:
             path, data= transQ.get()
-            cv2.imwrite(path,data)
+            if 'cm_rgb' in path:
+                cv2.imwrite(path,data, [int(cv2.IMWRITE_JPEG_QUALITY),97])
+            elif 'cm_depth' in path:
+                np.savez(path,data)
+            else:
+                cv2.imwrite(path,data)
             transQ.task_done()
     
 
 
 if __name__ == '__main__':
 
-    transQ = JoinableQueue()
-    start_time = time.time()
+    args = get_args()
+    try:
+        transQ = JoinableQueue()
 
-    prod = Process(target=producer,args=(transQ,start_time))
-    con1 = Process(target=consumuer,args=(transQ,))
-    con2 = Process(target=consumuer,args=(transQ,))
-    con3 = Process(target=consumuer,args=(transQ,))
-    con4 = Process(target=consumuer,args=(transQ,))
+        prod = Process(target=producer,args=(transQ, args))
+        con_list = []
+        for i in range(min(args.num_workers,8)):
+            con = Process(target=consumuer,args=(transQ,))
+            con.daemon = True
+            con_list.append(con)
 
-    con1.daemon=True
-    con2.daemon=True
-    con3.daemon=True
-    con4.daemon=True
-
-    prod.start()
-
-    con1.start()
-    con2.start()
-    con3.start()
-    con4.start()
+        prod.start()
+        for con in con_list:
+            con.start() 
+        
+        prod.join()  # 等待生产和消费完成，主线程结束
     
-    prod.join()  # 等待生产和消费完成，主线程结束
+    except ProcessError as e:
+        print(str(e))
     
-    os.system("PAUSE")
-    print('Exit Main Process')
+    finally:
+        print('Exit Main Process')
+        os.system("PAUSE")
+    

@@ -5,9 +5,35 @@ sys.path.insert(0, parent_path)
 
 
 import carla
-import random,math
-from utilities import get_args, config_sim_scene
+import random,argparse
+from utilities import config_sim_scene
 import logging,time,json
+
+def get_args():
+    parser = argparse.ArgumentParser(description='parameters for collecting data')
+
+    # basic settings
+    parser.add_argument('--server_ip', type=str, default='127.0.0.1', help='the host ip of carla server')
+    parser.add_argument('--server_port', type=int, default=2000, help='the port of carla server listen')
+
+    # collect settings
+    parser.add_argument('--config_path', type=str, default='configs/demo_config.json', help='the path of config file')
+    parser.add_argument('--save_data_path', type=str, default='output_data_maskcar', help='the path for saving data')
+
+    # npc setttings
+    parser.add_argument('-n', '--number-of-vehicles', metavar='N', default=30, type=int, help='Number of vehicles (default: 30)')
+    parser.add_argument('-w', '--number-of-walkers', metavar='W', default=10, type=int, help='Number of walkers (default: 10)')
+    parser.add_argument('--safe', action='store_true', help='Avoid spawning vehicles prone to accidents')
+    parser.add_argument('--filterv',metavar='PATTERN',default='vehicle.*',help='Filter vehicle model (default: "vehicle.*")')
+    parser.add_argument('--generationv',metavar='G',default='All',help='restrict to certain vehicle generation (values: "1","2","All" - default: "All")')
+    parser.add_argument('--filterw',metavar='PATTERN',default='walker.pedestrian.*',help='Filter pedestrian type (default: "walker.pedestrian.*")')
+    parser.add_argument('--generationw',metavar='G',default='2',help='restrict to certain pedestrian generation (values: "1","2","All" - default: "2")')
+    parser.add_argument('--seedw',metavar='S', default=0, type=int, help='Set the seed for pedestrians module')
+
+    # multi processer setting
+    parser.add_argument('--num_workers', type=int, default=1)
+
+    return parser.parse_args()
 
 def main():
 
@@ -30,10 +56,9 @@ def main():
                 world.tick()
 
                 # 将CARLA界面摄像头跟随ego_vehicle动
-                loc = hero_actor.get_transform().location + carla.Location(x=0,y=0,z=1.25)
-                rot = hero_actor.get_transform().rotation 
+                loc = hero_actor.get_transform().location + carla.Location(x=0,y=0,z=35) 
                 # 车后视角
-                spectator.set_transform(carla.Transform(loc,carla.Rotation(roll=rot.roll,yaw=rot.yaw,pitch=-20)))
+                spectator.set_transform(carla.Transform(loc,carla.Rotation(pitch=-90)))
                 
                 # spectator.set_transform(carla.Transform(carla.Location(x=loc.x,y=loc.y,z=35),carla.Rotation(yaw=0,pitch=-90,roll=0)))           
             except Exception as e:
