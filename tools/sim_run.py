@@ -149,7 +149,7 @@ def producer(transQ:JoinableQueue, args):
         logger.info('destroying %d walkers' % len(npc_walker_list))
         client.apply_batch([carla.command.DestroyActor(x) for x in npc_walker_id])
 
-        with open(os.path.join(args.save_data_path,'external.txt'),'a') as f:
+        with open(os.path.join(args.save_data_path,'external.txt'),'w') as f:
             f.writelines(write_strs)
         time.sleep(0.5)
         
@@ -177,7 +177,7 @@ if __name__ == '__main__':
 
         prod = Process(target=producer,args=(transQ, args))
         con_list = []
-        for i in range(min(args.num_workers,8)):
+        for i in range(min(args.num_workers,16)):
             con = Process(target=consumuer,args=(transQ,))
             con.daemon = True
             con_list.append(con)

@@ -55,5 +55,5 @@ if __name__ == '__main__':
     logging.info('Found %d recommanded spawn points',len(spawn_points))
 
     for i, spawn_point in enumerate(spawn_points):
-        world.debug.draw_string(spawn_point.location, str(f'i:{i}, y:{spawn_point.location.y}'), life_time=10)
+        world.debug.draw_string(spawn_point.location, str(f'i:{i}, x:{spawn_point.location.x}, y:{spawn_point.location.y}'), life_time=10)
     world.debug.draw_string(walker_spawn_location, 'walker', color=carla.Color(0,255,0,255),life_time=20)

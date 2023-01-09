@@ -17,6 +17,7 @@ if __name__ == '__main__':
     parser.add_argument('--fov', type=int, default=190, help='target fisheye fov')
     parser.add_argument('--cubemap_dir', type=str, default='output_raw_data/cubemap')
     parser.add_argument('--camera', type=str)
+    parser.add_argument('--format', type=str, default='jpg')
     parser.add_argument('--cubeW',type=int)
     parser.add_argument('--outW',type=int)
     parser.add_argument('--external_path', type=str, default='output_raw_data/external.txt', help='path of external.txt')
@@ -52,19 +53,19 @@ if __name__ == '__main__':
         
         #back - left - front - right - up - down 
         #step 1 readcube
-        cube[0,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_back_{frame}.png"),(2,0,1))
-        cube[1,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_left_{frame}.png"),(2,0,1))
-        cube[2,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_front_{frame}.png"),(2,0,1))
-        cube[3,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_right_{frame}.png"),(2,0,1))
-        cube[4,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_up_{frame}.png"),(2,0,1))
-        cube[5,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_down_{frame}.png"),(2,0,1))
+        cube[0,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_back_{frame}.{args.format}"),(2,0,1))
+        cube[1,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_left_{frame}.{args.format}"),(2,0,1))
+        cube[2,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_front_{frame}.{args.format}"),(2,0,1))
+        cube[3,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_right_{frame}.{args.format}"),(2,0,1))
+        cube[4,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_up_{frame}.{args.format}"),(2,0,1))
+        cube[5,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_down_{frame}.{args.format}"),(2,0,1))
 
         # execute trans
         fish = c2f.trans(cube)
         fish = fish.transpose((1, 2, 0))
         fish.astype(np.uint8)
 
-        cv2.imwrite(os.path.join(args.output_dir,f'fe_{cam}_{frame}.png'), fish)
+        cv2.imwrite(os.path.join(args.output_dir,f'fe_{cam}_{frame}.jpg'), fish, [int(cv2.IMWRITE_JPEG_QUALITY), 97])
 
 
     os.system('PAUSE')

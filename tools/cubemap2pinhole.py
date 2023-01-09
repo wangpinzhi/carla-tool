@@ -23,7 +23,7 @@ if __name__ == '__main__':
     parser.add_argument('--cubeW',type=int, default=1080)
     parser.add_argument('--outH',type=int)
     parser.add_argument('--outW',type=int)
-
+    parser.add_argument('--format', type=str, default='jpg')
     parser.add_argument('--cubemap_dir', type=str, default='output_raw_data/cubemap')
     parser.add_argument('--camera', type=str)
     parser.add_argument('--external_path', type=str, default='output_raw_data/external.txt', help='path of external.txt')
@@ -77,12 +77,12 @@ if __name__ == '__main__':
 
     for frame in tqdm(frames, desc='Cubemap2Pinhole Processing ', unit='frames'):
 
-        cube[0,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_back_{frame}.png"),(2,0,1))
-        cube[1,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_down_{frame}.png"),(2,0,1))
-        cube[2,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_front_{frame}.png"),(2,0,1))
-        cube[3,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_left_{frame}.png"),(2,0,1))
-        cube[4,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_right_{frame}.png"),(2,0,1))
-        cube[5,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_up_{frame}.png"),(2,0,1))
+        cube[0,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_back_{frame}.{args.format}"),(2,0,1))
+        cube[1,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_down_{frame}.{args.format}"),(2,0,1))
+        cube[2,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_front_{frame}.{args.format}"),(2,0,1))
+        cube[3,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_left_{frame}.{args.format}"),(2,0,1))
+        cube[4,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_right_{frame}.{args.format}"),(2,0,1))
+        cube[5,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_up_{frame}.{args.format}"),(2,0,1))
             
         cube_tensor=torch.from_numpy(cube)
         out_erp = cubemap2erp.ToEquirecTensor(cube_tensor)
@@ -93,6 +93,6 @@ if __name__ == '__main__':
         out = np.transpose(out,(1,2,0))
         out = out.astype(np.uint8)
 
-        cv2.imwrite(os.path.join(args.output_dir, f'ph_{cam}_{frame}.png'), out)
+        cv2.imwrite(os.path.join(args.output_dir, f'ph_{cam}_{frame}.{args.format}'), out)
         
         

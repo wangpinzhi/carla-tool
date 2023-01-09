@@ -48,19 +48,21 @@ def main():
         
         hero_actor, client, original_settings, npc_vehicle_list, npc_walker_list, npc_walker_id, npc_walker_actors = config_sim_scene(args)
         world = client.get_world()
-        spectator = world.get_spectator() 
-
+        spectator = world.get_spectator()
+        frames = 1 
         while True:
             try:
+                print(f'frames:{frames}')
                 # Tick the server
                 world.tick()
-
+                
                 # 将CARLA界面摄像头跟随ego_vehicle动
                 loc = hero_actor.get_transform().location + carla.Location(x=0,y=0,z=35) 
                 # 车后视角
                 spectator.set_transform(carla.Transform(loc,carla.Rotation(pitch=-90)))
                 
                 # spectator.set_transform(carla.Transform(carla.Location(x=loc.x,y=loc.y,z=35),carla.Rotation(yaw=0,pitch=-90,roll=0)))           
+                frames += 1
             except Exception as e:
                 print(str(e))
      

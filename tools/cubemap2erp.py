@@ -21,10 +21,11 @@ if __name__ == '__main__':
     # basic settings
     parser.add_argument('--cubemap_dir', type=str, default='output_invisiable_data_frame100/cubemap')
     parser.add_argument('--camera', type=str, default='depth1')
+    parser.add_argument('--format', type=str, default='npz')
     parser.add_argument('--external_path', type=str, default='output_invisiable_data_frame100/external.txt')
     parser.add_argument('--output_dir', type=str, default='output_invisiable_data_frame100/output_erp')
-    parser.add_argument('--cubeW',type=int, default=1080)
-    parser.add_argument('--out_height',type=int,default=1440)
+    parser.add_argument('--cubeW',type=int, default=2560)
+    parser.add_argument('--out_height',type=int,default=2560)
     parser.add_argument('--use_cuda',action='store_true',default=False, help='use gpu to post data')
 
     args=parser.parse_args()
@@ -64,8 +65,11 @@ if __name__ == '__main__':
         if 'depth' in args.camera:
             cube = np.zeros([6,1,args.cubeW,args.cubeW], dtype=np.float64)
             for idx,view in [(0,'back'),(1,'down'),(2,'front'),(3,'left'),(4,'right'),(5,'up')]:
-                raw = cv2.imread(glob.glob(f"{args.cubemap_dir}/{args.camera}_{view}_{frame}.png")[0],-1)
-                raw = cv2.cvtColor(raw,cv2.COLOR_BGRA2RGB)
+                if args.format == 'npz':
+                    raw = np.load(f"{args.cubemap_dir}/{args.camera}_{view}_{frame}.{args.format}")['arr_0']
+                    # print(raw)
+                    # raw = cv2.imread(glob.glob(f"{args.cubemap_dir}/{args.camera}_{view}_{frame}.png")[0],-1)
+                raw = cv2.cvtColor(raw, cv2.COLOR_BGRA2RGB)
                 raw = raw.astype(np.float64)
                 raw = np.transpose(raw,(2,0,1))
                 normalized = (raw[0] + raw[1] * 256 + raw[2] * 256 * 256) / (256 * 256 * 256 - 1)
@@ -82,8 +86,8 @@ if __name__ == '__main__':
             vis_color=cv2.applyColorMap(cv2.convertScaleAbs(out,alpha=255/50),cv2.COLORMAP_JET)
             im=Image.fromarray(vis_color)
                 
-            im.save(os.path.join(outputVis_dir, f'erpVis_{cam}_{frame}.png'))
-            np.save(os.path.join(args.output_dir, f'erp_{cam}_{frame}.npy'),out)
+            im.save(os.path.join(outputVis_dir, f'erpVis_{cam}_{frame}.jpg'))
+            np.savez(os.path.join(args.output_dir, f'erp_{cam}_{frame}.npz'),out)
             
         
         else:

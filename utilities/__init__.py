@@ -1,6 +1,8 @@
 from utilities.pinhole_camera import get_pinhole_camera_rgb, get_pinhole_camera_depth
 from utilities.cubemap_camera import get_cubemap_camera_rgb, get_cubemap_camera_depth
 from utilities.generate_npc import generate_vehicle, generate_walker
+from utilities.fisheyeCubemap import Cubemap2Fisheye
+from utilities.erpCubemap import c2e
 import carla
 import json,re
 import os
@@ -51,7 +53,7 @@ def config_sim_scene(args):
 
     # 获取当前map
     old_map = world.get_map().name
-    if old_map != scene_settings["map"]:
+    if scene_settings["map"] not in old_map :
         world = client.load_world(scene_settings["map"])
         print('reload world map: {}->{}'.format(old_map, scene_settings["map"]))
     
@@ -66,10 +68,13 @@ def config_sim_scene(args):
 
     # 获取world蓝图
     blueprint_library = world.get_blueprint_library()
-    
+     
+
     # Traffic Manager
     tm_setting_list = scene_settings["traffic_mananger_setting"]
+    
     for tm_setting in tm_setting_list:
+        print(client)
         tm = client.get_trafficmanager(tm_setting["port"])
         tm.set_random_device_seed(tm_setting["random_device_seed"])
         tm.set_global_distance_to_leading_vehicle(tm_setting["global_distance_to_leading_vehicle"])
@@ -79,14 +84,17 @@ def config_sim_scene(args):
         tm.set_respawn_dormant_vehicles(True)
         tm.set_boundaries_respawn_dormant_vehicles(25,700)
     
+
     
     # 获得spawn points
     spawn_points = world.get_map().get_spawn_points()
+    
 
     # 设置hero car
+    print('get hero_bp success')
     hero_bp = blueprint_library.find(scene_settings["hero_actor"]["blueprint"])
     hero_bp.set_attribute('role_name', 'hero')
-    
+      
     if scene_settings["hero_actor"]["spawn_points_index"] == -1:
         loc_x = scene_settings["hero_actor"]["spawn_points"]['loc_x']
         loc_y = scene_settings["hero_actor"]["spawn_points"]['loc_y']
@@ -97,17 +105,26 @@ def config_sim_scene(args):
         hero_spawn_point = carla.Transform(carla.Location(loc_x,loc_y,loc_z),carla.Rotation(rot_p,rot_y,rot_r))
     else:
         hero_spawn_point = spawn_points[scene_settings["hero_actor"]["spawn_points_index"]]
-            
-    hero_actor = world.spawn_actor(hero_bp,hero_spawn_point)
+           
+    hero_actor = world.spawn_actor(hero_bp, hero_spawn_point)
+    print('Spawn hero actor success')
     hero_actor.set_autopilot(scene_settings["hero_actor"]["autopilot"], scene_settings["hero_actor"]["tm_port"])
     if scene_settings["hero_actor"]["autopilot"]:
         route = [spawn_points[ind].location for ind in scene_settings["hero_actor"]["route_indices"]]
+        if len(route) == 0:
+            route = [
+                carla.Location(item["loc_x"],item["loc_y"],item["loc_z"]) for item in scene_settings["hero_actor"]["route_points"]
+            ]
+            # route = scene_settings["hero_actor"]["route_points"]
+        print(len(route))
         tm = client.get_trafficmanager(scene_settings["hero_actor"]["tm_port"])
         # Set parameters of TM hero actor control
         tm.ignore_lights_percentage(hero_actor, scene_settings["hero_actor"]["ignore_lights_percentage"])
         tm.random_left_lanechange_percentage(hero_actor, scene_settings["hero_actor"]["random_left_lanechange_percentage"])
         tm.random_right_lanechange_percentage(hero_actor, scene_settings["hero_actor"]["random_right_lanechange_percentage"])
         tm.auto_lane_change(hero_actor, scene_settings["hero_actor"]["auto_lane_change"])
+        tm.set_desired_speed(hero_actor, scene_settings["hero_actor"]["desired_speed"])
+        tm.ignore_signs_percentage(hero_actor, 0)
         tm.set_path(hero_actor, route) # 设置车辆行驶路线
     else:
         print("hero actor not autopilot!")
@@ -115,7 +132,7 @@ def config_sim_scene(args):
     # gen vehicle npc
     npc_vehicle_list = generate_vehicle(client,scene_settings["vehicle_npc"],args)
     npc_walker_list, npc_walker_id, npc_walker_actors = generate_walker(client,scene_settings["walker_npc"],args)
-
+    
     return hero_actor, client, original_settings, npc_vehicle_list, npc_walker_list, npc_walker_id, npc_walker_actors
 
    

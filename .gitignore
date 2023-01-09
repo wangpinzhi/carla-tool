@@ -7,3 +7,4 @@ tools/generate_traffic.py
 *.pyc
 video/
 *.ipynb
+scenes/

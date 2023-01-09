@@ -12,6 +12,7 @@ if __name__ == '__main__':
     # basic settings
     parser.add_argument('--input_dir', type=str)
     parser.add_argument('--output_dir', type=str)
+    parser.add_argument('--format', type=str, default='png')
     parser.add_argument('--camera', type=str, default='erpVis_depth1')
     parser.add_argument('--output_width', type=int)
     parser.add_argument('--output_height', type=int)
@@ -38,17 +39,18 @@ if __name__ == '__main__':
 
     
     output_path = os.path.join(args.output_dir,f'{args.camera}.mp4')
-    size = (args.output_width,args.output_height) # W x H
+    size = (args.output_width, args.output_height) # W x H
     video = cv2.VideoWriter(output_path, fourcc, args.fps, size)
     
     print('start generate video {}'.format(output_path))
     
     for frame in frames:
-        img = cv2.imread(os.path.join(args.input_dir,f'{args.camera}_{frame}.png'))
+        img = cv2.imread(os.path.join(args.input_dir,f'{args.camera}_{frame}.{args.format}'))
         video.write(img)  # 把图片写进视频
     video.release()
 
     print('video generate finished')
+    os.system('pause')
         
 
         
