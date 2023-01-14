@@ -10,7 +10,6 @@ import numpy as np
 from tqdm import tqdm
 import cv2
 import math
-from omnicv import fisheyeImgConv
 from PIL import Image
 
 
@@ -93,7 +92,6 @@ if __name__ == '__main__':
         else:
 
             cube = np.zeros([6,3,args.cubeW,args.cubeW], dtype=np.float64)
-            mapper = fisheyeImgConv()
 
             cube[0,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_back_{frame}.png"),(2,0,1))
             cube[1,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_down_{frame}.png"),(2,0,1))
@@ -110,7 +108,4 @@ if __name__ == '__main__':
             out = np.transpose(out,(1,2,0))
             out = out.astype(np.uint8)
 
-            cv2.imwrite(os.path.join(args.output_dir, f'erp_{cam}_{frame}.png'), out)
-
-
-    os.system('PAUSE')
+            cv2.imwrite(os.path.join(args.output_dir, f'erp_{cam}_{frame}.jpg'), out, [int(cv2.IMWRITE_JPEG_QUALITY), 97])

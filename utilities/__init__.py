@@ -74,7 +74,6 @@ def config_sim_scene(args):
     tm_setting_list = scene_settings["traffic_mananger_setting"]
     
     for tm_setting in tm_setting_list:
-        print(client)
         tm = client.get_trafficmanager(tm_setting["port"])
         tm.set_random_device_seed(tm_setting["random_device_seed"])
         tm.set_global_distance_to_leading_vehicle(tm_setting["global_distance_to_leading_vehicle"])
@@ -109,6 +108,7 @@ def config_sim_scene(args):
     hero_actor = world.spawn_actor(hero_bp, hero_spawn_point)
     print('Spawn hero actor success')
     hero_actor.set_autopilot(scene_settings["hero_actor"]["autopilot"], scene_settings["hero_actor"]["tm_port"])
+    print('Set autopilot success')
     if scene_settings["hero_actor"]["autopilot"]:
         route = [spawn_points[ind].location for ind in scene_settings["hero_actor"]["route_indices"]]
         if len(route) == 0:

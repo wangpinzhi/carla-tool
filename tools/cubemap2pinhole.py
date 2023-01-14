@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-from omnicv import fisheyeImgConv
 
 import sys,os
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
@@ -9,7 +8,7 @@ sys.path.insert(0, parent_path)
 from utilities import c2e
 import torch.nn.functional as F
 import argparse
-import os,re,cv2,glob
+import os,re,cv2
 import numpy as np
 from tqdm import tqdm
 
@@ -48,7 +47,6 @@ if __name__ == '__main__':
     # step2 trans cubemap to erp
     cube = np.zeros([6,3,args.cubeW,args.cubeW], dtype=np.float64)
     cubemap2erp = c2e(cubeW=args.cubeW, outH=args.cubeW, outW=args.cubeW*2,CUDA=args.use_cuda)
-    mapper = fisheyeImgConv()
 
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
@@ -93,6 +91,6 @@ if __name__ == '__main__':
         out = np.transpose(out,(1,2,0))
         out = out.astype(np.uint8)
 
-        cv2.imwrite(os.path.join(args.output_dir, f'ph_{cam}_{frame}.{args.format}'), out)
+        cv2.imwrite(os.path.join(args.output_dir, f'ph_{cam}_{frame}.{args.format}'), out, [int(cv2.IMWRITE_JPEG_QUALITY), 97])
         
         

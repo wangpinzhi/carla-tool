@@ -193,5 +193,4 @@ if __name__ == '__main__':
     
     finally:
         print('Exit Main Process')
-        os.system("PAUSE")
     
