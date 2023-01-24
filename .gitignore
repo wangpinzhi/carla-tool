@@ -6,5 +6,4 @@ tools/generate_traffic.py
 *.zip
 *.pyc
 video/
-*.ipynb
 scenes/
