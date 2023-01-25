@@ -13,7 +13,7 @@ start python tools/cubemap2pinhole.py   --fov 60^
                                         --cubemap_dir "%ROOT_PATH%/cubemap"^
                                         --output_dir "%ROOT_PATH%/pinhole"^
                                         --camera "cm_rgb8"^
-                                        --use_cuda
+                                        
 
 start python tools/cubemap2fisheye.py   --fov 190^
                                         --cubeW 2560^
@@ -23,7 +23,7 @@ start python tools/cubemap2fisheye.py   --fov 190^
                                         --cubemap_dir "%ROOT_PATH%/cubemap"^
                                         --output_dir "%ROOT_PATH%/fisheye190"^
                                         --camera "cm_rgb13"^
-                                        --use_cuda
+                                        
 
 start python tools/cubemap2fisheye.py   --fov 190^
                                         --cubeW 2560^
@@ -33,7 +33,7 @@ start python tools/cubemap2fisheye.py   --fov 190^
                                         --cubemap_dir "%ROOT_PATH%/cubemap"^
                                         --output_dir "%ROOT_PATH%/fisheye190"^
                                         --camera "cm_rgb11"^
-                                        --use_cuda
+                                        
 
 start /WAIT python tools/cubemap2erp.py       --external_path "%ROOT_PATH%/external.txt"^
                                         --cubeW 2560^
@@ -41,4 +41,4 @@ start /WAIT python tools/cubemap2erp.py       --external_path "%ROOT_PATH%/exter
                                         --cubemap_dir "%ROOT_PATH%/cubemap"^
                                         --output_dir "%ROOT_PATH%/erp"^
                                         --camera "cm_depth0"^
-                                        --use_cuda
+                                        

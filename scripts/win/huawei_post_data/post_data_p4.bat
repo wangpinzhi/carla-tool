@@ -13,7 +13,7 @@ start python tools/cubemap2pinhole.py   --fov 100^
                                         --cubemap_dir "%ROOT_PATH%/cubemap"^
                                         --output_dir "%ROOT_PATH%/pinhole"^
                                         --camera "cm_rgb7"^
-                                        --use_cuda
+                                        
 
 start python tools/cubemap2pinhole.py   --fov 100^
                                         --cubeW 2560^
@@ -23,7 +23,7 @@ start python tools/cubemap2pinhole.py   --fov 100^
                                         --cubemap_dir "%ROOT_PATH%/cubemap"^
                                         --output_dir "%ROOT_PATH%/pinhole"^
                                         --camera "cm_rgb6"^
-                                        --use_cuda
+                                        
 
 start /WAIT python tools/cubemap2pinhole.py   --fov 100^
                                         --cubeW 2560^
@@ -33,4 +33,4 @@ start /WAIT python tools/cubemap2pinhole.py   --fov 100^
                                         --cubemap_dir "%ROOT_PATH%/cubemap"^
                                         --output_dir "%ROOT_PATH%/pinhole"^
                                         --camera "cm_rgb1"^
-                                        --use_cuda
+                                        
