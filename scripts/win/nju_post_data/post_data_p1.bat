@@ -13,7 +13,8 @@ start python tools/cubemap2fisheye.py   --fov 180^
                                         --cubemap_dir "%ROOT_PATH%/cubemap"^
                                         --output_dir "%ROOT_PATH%/fisheye180"^
                                         --camera "cm_rgb0"^
-                                        --use_cuda
+                                        
+                                        
 
 start python tools/cubemap2fisheye.py   --fov 180^
                                         --cubeW 2560^
@@ -23,7 +24,7 @@ start python tools/cubemap2fisheye.py   --fov 180^
                                         --cubemap_dir "%ROOT_PATH%/cubemap"^
                                         --output_dir "%ROOT_PATH%/fisheye180"^
                                         --camera "cm_rgb1"^
-                                        --use_cuda
+                                        
 
 start /WAIT python tools/cubemap2fisheye.py   --fov 180^
                                         --cubeW 2560^
@@ -33,5 +34,5 @@ start /WAIT python tools/cubemap2fisheye.py   --fov 180^
                                         --cubemap_dir "%ROOT_PATH%/cubemap"^
                                         --output_dir "%ROOT_PATH%/fisheye180"^
                                         --camera "cm_rgb2"^
-                                        --use_cuda
+                                        
 
