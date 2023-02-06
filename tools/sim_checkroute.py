@@ -46,13 +46,15 @@ def main():
 
     try:
         
-        hero_actor, client, original_settings, npc_vehicle_list, npc_walker_list, npc_walker_id, npc_walker_actors = config_sim_scene(args)
+        hero_actor_id, client, original_settings, npc_vehicle_list, npc_walker_list, npc_walker_id, npc_walker_actors = config_sim_scene(args)
         world = client.get_world()
+        hero_actor = world.get_actor(hero_actor_id)
         spectator = world.get_spectator()
         frames = 1 
+        hero_actor.set_autopilot(True, 8000)
         while True:
             try:
-                print(f'frames:{frames}')
+                print(f'frames:{frames}',end='\r',flush=True)
                 # Tick the server
                 world.tick()
                 
@@ -75,9 +77,6 @@ def main():
         for tm_setting in tm_setting_list:
             tm = client.get_trafficmanager(tm_setting["port"])
             tm.set_synchronous_mode(False)
-
-        hero_actor.destroy()
-        logging.info("Destroy Actor: hero_actor")
 
         logging.info('destroying %d vehicles' % len(npc_vehicle_list))
         client.apply_batch([carla.command.DestroyActor(x) for x in npc_vehicle_list])

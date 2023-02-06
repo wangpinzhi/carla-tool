@@ -61,9 +61,11 @@ def producer(transQ:JoinableQueue, args):
 
     try:
         
-        hero_actor, client, original_settings, npc_vehicle_list, npc_walker_list, npc_walker_id, npc_walker_actors = config_sim_scene(args)
+        hero_actor_id, client, original_settings, npc_vehicle_list, npc_walker_list, npc_walker_id, npc_walker_actors = config_sim_scene(args)
 
-        world = client.get_world()     
+        world = client.get_world()   
+
+        hero_actor = world.get_actor(hero_actor_id)  
         spectator = world.get_spectator() 
         
             
@@ -136,9 +138,6 @@ def producer(transQ:JoinableQueue, args):
         logger.info('Destroying %d sensors' % len(sensor_actors))
         for sensor in sensor_actors:
             sensor.destroy()
-
-        logger.info('Destroying hero vehicles')
-        hero_actor.destroy()
 
         logger.info('destroying %d vehicles' % len(npc_vehicle_list))
         client.apply_batch([carla.command.DestroyActor(x) for x in npc_vehicle_list])

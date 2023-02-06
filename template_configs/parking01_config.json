@@ -27,7 +27,14 @@
             "route_indices":[],
             "route_points":[]
         },
-        "vehicle_npc":[],
+        "vehicle_npc":[
+            {
+                "random_bluerint":true,
+                "spawn_points_index":1,
+                "autopilot":false,
+                "tm_port":8000
+            }
+        ],
         "walker_npc":[]
     },
     "sensor_config":{

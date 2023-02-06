@@ -3,7 +3,7 @@ from utilities.cubemap_camera import get_cubemap_camera_rgb, get_cubemap_camera_
 from utilities.generate_npc import generate_vehicle, generate_walker
 from utilities.erpCubemap import c2e
 import carla
-import json,re
+import json,re, logging
 import os
 
 
@@ -82,14 +82,16 @@ def config_sim_scene(args):
         tm.set_respawn_dormant_vehicles(True)
         tm.set_boundaries_respawn_dormant_vehicles(25,700)
     
-
+    
     
     # 获得spawn points
     spawn_points = world.get_map().get_spawn_points()
     
+    # gen vehicle npc
+    vehicle_batch = generate_vehicle(client,scene_settings["vehicle_npc"], args)
+    npc_walker_list, npc_walker_id, npc_walker_actors = generate_walker(client,scene_settings["walker_npc"],args)
 
     # 设置hero car
-    print('get hero_bp success')
     hero_bp = blueprint_library.find(scene_settings["hero_actor"]["blueprint"])
     hero_bp.set_attribute('role_name', 'hero')
       
@@ -103,35 +105,52 @@ def config_sim_scene(args):
         hero_spawn_point = carla.Transform(carla.Location(loc_x,loc_y,loc_z),carla.Rotation(rot_p,rot_y,rot_r))
     else:
         hero_spawn_point = spawn_points[scene_settings["hero_actor"]["spawn_points_index"]]
-           
-    hero_actor = world.spawn_actor(hero_bp, hero_spawn_point)
-    print('Spawn hero actor success')
-    hero_actor.set_autopilot(scene_settings["hero_actor"]["autopilot"], scene_settings["hero_actor"]["tm_port"])
-    print('Set autopilot success')
-    if scene_settings["hero_actor"]["autopilot"]:
-        route = [spawn_points[ind].location for ind in scene_settings["hero_actor"]["route_indices"]]
-        if len(route) == 0:
-            route = [
-                carla.Location(item["loc_x"],item["loc_y"],item["loc_z"]) for item in scene_settings["hero_actor"]["route_points"]
-            ]
-            # route = scene_settings["hero_actor"]["route_points"]
-        print(len(route))
-        tm = client.get_trafficmanager(scene_settings["hero_actor"]["tm_port"])
-        # Set parameters of TM hero actor control
-        tm.ignore_lights_percentage(hero_actor, scene_settings["hero_actor"]["ignore_lights_percentage"])
-        tm.random_left_lanechange_percentage(hero_actor, scene_settings["hero_actor"]["random_left_lanechange_percentage"])
-        tm.random_right_lanechange_percentage(hero_actor, scene_settings["hero_actor"]["random_right_lanechange_percentage"])
-        tm.auto_lane_change(hero_actor, scene_settings["hero_actor"]["auto_lane_change"])
-        tm.set_desired_speed(hero_actor, scene_settings["hero_actor"]["desired_speed"])
-        tm.ignore_signs_percentage(hero_actor, 0)
-        tm.set_path(hero_actor, route) # 设置车辆行驶路线
-    else:
-        print("hero actor not autopilot!")
-
-    # gen vehicle npc
-    npc_vehicle_list = generate_vehicle(client,scene_settings["vehicle_npc"],args)
-    npc_walker_list, npc_walker_id, npc_walker_actors = generate_walker(client,scene_settings["walker_npc"],args)
     
-    return hero_actor, client, original_settings, npc_vehicle_list, npc_walker_list, npc_walker_id, npc_walker_actors
+    # hero_actor = world.spawn_actor(hero_bp, hero_spawn_point)
+    # print('Spawn hero actor success')
+    
+    SpawnActor = carla.command.SpawnActor
+    SetAutopilot = carla.command.SetAutopilot
+    FutureActor = carla.command.FutureActor
+    # vehicle_batch.append(SetAutopilot(hero_actor,scene_settings["hero_actor"]["autopilot"],scene_settings["hero_actor"]["tm_port"]))
+    vehicle_batch.append(
+        SpawnActor(hero_bp, hero_spawn_point).then(
+            SetAutopilot(FutureActor, scene_settings["hero_actor"]["autopilot"], scene_settings["hero_actor"]["tm_port"])
+        )
+    )
+    npc_vehicle_list = []
+    hero_actor_id = -1
+    for response in client.apply_batch_sync(vehicle_batch, world.get_settings().synchronous_mode):
+        if response.error:
+            print(response.error)
+        else:
+            actor = world.get_actor(response.actor_id)
+            if actor.attributes ['role_name'] == 'hero':
+                hero_actor = actor
+                hero_actor_id = response.actor_id
+                if scene_settings["hero_actor"]["autopilot"]:
+                    route = [spawn_points[ind].location for ind in scene_settings["hero_actor"]["route_indices"]]
+                    if len(route) == 0:
+                        route = [
+                            carla.Location(item["loc_x"],item["loc_y"],item["loc_z"]) for item in scene_settings["hero_actor"]["route_points"]
+                        ]
+                        # route = scene_settings["hero_actor"]["route_points"]
+                    tm = client.get_trafficmanager(scene_settings["hero_actor"]["tm_port"])
+                    # Set parameters of TM hero actor control
+                    tm.ignore_lights_percentage(hero_actor, scene_settings["hero_actor"]["ignore_lights_percentage"])
+                    tm.random_left_lanechange_percentage(hero_actor, scene_settings["hero_actor"]["random_left_lanechange_percentage"])
+                    tm.random_right_lanechange_percentage(hero_actor, scene_settings["hero_actor"]["random_right_lanechange_percentage"])
+                    tm.auto_lane_change(hero_actor, scene_settings["hero_actor"]["auto_lane_change"])
+                    tm.set_desired_speed(hero_actor, scene_settings["hero_actor"]["desired_speed"])
+                    tm.ignore_signs_percentage(hero_actor, 100)
+                    tm.set_path(hero_actor, route) # 设置车辆行驶路线
+                else:
+                    print("hero actor not autopilot!")
+            npc_vehicle_list.append(response.actor_id)
+    # hero_actor.set_autopilot(scene_settings["hero_actor"]["autopilot"], scene_settings["hero_actor"]["tm_port"])
+    assert hero_actor_id != -1
+    print('Set autopilot success')
+
+    return hero_actor_id, client, original_settings, npc_vehicle_list, npc_walker_list, npc_walker_id, npc_walker_actors
 
    
