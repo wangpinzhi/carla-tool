@@ -33,7 +33,6 @@ def get_actor_blueprints(world, filter, generation):
 
 def generate_vehicle(client, gen_list, args):
 
-    vehicle_list = []
     batch = []
 
     SpawnActor = carla.command.SpawnActor
@@ -68,13 +67,7 @@ def generate_vehicle(client, gen_list, args):
             )
         )
     
-    for response in client.apply_batch_sync(batch, world.get_settings().synchronous_mode):
-        if response.error:
-            logging.error(response.error)
-        else:
-            vehicle_list.append(response.actor_id)
-    
-    return vehicle_list
+    return batch
 
 def generate_walker(client, gen_list, args):
 
