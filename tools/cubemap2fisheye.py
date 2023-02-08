@@ -189,7 +189,7 @@ if __name__ == '__main__':
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
-    pbar = tqdm(frames, desc='Cubemap2Fisheye Processing ', unit='frames')
+    pbar = tqdm(frames, desc=f'c2f {args.camera}', unit='frames')
 
     for frame in pbar:
 
