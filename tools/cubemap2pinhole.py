@@ -73,7 +73,7 @@ if __name__ == '__main__':
         grid = grid.cuda()
 
 
-    for frame in tqdm(frames, desc='Cubemap2Pinhole Processing ', unit='frames'):
+    for frame in tqdm(frames, desc=f'c2p {args.camera}', unit='frames'):
 
         cube[0,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_back_{frame}.{args.format}"),(2,0,1))
         cube[1,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_down_{frame}.{args.format}"),(2,0,1))
