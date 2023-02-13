@@ -86,9 +86,9 @@ def producer(transQ:JoinableQueue, args):
             world.tick()
 
             # 将CARLA界面摄像头跟随ego_vehicle动
-            loc = hero_actor.get_transform().location + carla.Location(x=0,y=0,z=1.25)
+            loc = hero_actor.get_transform().location + carla.Location(x=0,y=0,z=35)
             rot = hero_actor.get_transform().rotation 
-            spectator.set_transform(carla.Transform(loc,carla.Rotation(roll=rot.roll,yaw=rot.yaw,pitch=-20)))         
+            spectator.set_transform(carla.Transform(loc,carla.Rotation(roll=rot.roll,yaw=rot.yaw,pitch=-90)))         
             
             # 处理传感器数据
             cur_ex_matrix = hero_actor.get_transform().get_matrix()
@@ -156,15 +156,14 @@ def producer(transQ:JoinableQueue, args):
 
 def consumuer(transQ:JoinableQueue):
     while True :
-        if not transQ.qsize() == 0:
-            path, data= transQ.get()
-            if 'cm_rgb' in path:
-                cv2.imwrite(path,data, [int(cv2.IMWRITE_JPEG_QUALITY),97])
-            elif 'cm_depth' in path:
-                np.savez(path,data)
-            else:
-                cv2.imwrite(path,data)
-            transQ.task_done()
+        path, data= transQ.get()
+        if 'cm_rgb' in path:
+            cv2.imwrite(path,data, [int(cv2.IMWRITE_JPEG_QUALITY),97])
+        elif 'cm_depth' in path:
+            np.savez(path,data)
+        else:
+            cv2.imwrite(path,data)
+        transQ.task_done()
     
 
 
@@ -188,7 +187,7 @@ if __name__ == '__main__':
         prod.join()  # 等待生产和消费完成，主线程结束
     
     except ProcessError as e:
-        print(str(e))
+        print('Process Error:',str(e))
     
     finally:
         print('Exit Main Process')
