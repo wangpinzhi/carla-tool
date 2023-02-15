@@ -110,8 +110,10 @@ def producer(transQ:JoinableQueue, args):
                     data_array = data_array[:, :, :3]
                     data_pre_time += (time.time()-start_time)
 
-                    if 'ph' in s_name:
+                    if 'ph_rgb' in s_name:
                         transQ.put((os.path.join(args.save_data_path,'pinhole','{}_{}.png'.format(s_name, cur_frame)), data_array))
+                    elif 'ph_depth' in s_name:
+                        transQ.put((os.path.join(args.save_data_path,'pinhole','{}_{}.npz'.format(s_name, cur_frame)), data_array))
                     elif 'cm_rgb' in s_name:
                         transQ.put((os.path.join(args.save_data_path,'cubemap','{}_{}.jpg'.format(s_name, cur_frame)), data_array))
                     elif 'cm_depth' in s_name:
@@ -160,6 +162,8 @@ def consumuer(transQ:JoinableQueue):
         if 'cm_rgb' in path:
             cv2.imwrite(path,data, [int(cv2.IMWRITE_JPEG_QUALITY),97])
         elif 'cm_depth' in path:
+            np.savez(path,data)
+        elif 'ph_depth' in path:
             np.savez(path,data)
         else:
             cv2.imwrite(path,data)

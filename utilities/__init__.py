@@ -82,8 +82,6 @@ def config_sim_scene(args):
         tm.set_respawn_dormant_vehicles(True)
         tm.set_boundaries_respawn_dormant_vehicles(25,700)
     
-    
-    
     # 获得spawn points
     spawn_points = world.get_map().get_spawn_points()
     

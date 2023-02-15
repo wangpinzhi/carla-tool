@@ -11,6 +11,7 @@ from tqdm import tqdm
 import cv2
 import math
 from PIL import Image
+from numba import jit
 
 
 if __name__ == '__main__':
@@ -33,6 +34,7 @@ if __name__ == '__main__':
 
     cube_cos = np.zeros((args.cubeW,args.cubeW),dtype=np.float64)
     D = (args.cubeW-1)/2
+    
     for i in range(args.cubeW):
         for j in range(args.cubeW):
             cube_cos[i][j] = math.sqrt(D*D/((i-D)*(i-D)+(j-D)*(j-D)+D*D))

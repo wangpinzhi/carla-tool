@@ -50,7 +50,6 @@ if __name__ == '__main__':
     video.release()
 
     print('video generate finished')
-    os.system('pause')
         
 
         
