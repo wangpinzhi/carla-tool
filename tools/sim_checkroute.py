@@ -56,7 +56,7 @@ def main():
             try:
                 print(f'frames:{frames}',end='\r',flush=True)
                 # Tick the server
-                world.tick()
+                world.wait_for_tick()
                 
                 # 将CARLA界面摄像头跟随ego_vehicle动
                 loc = hero_actor.get_transform().location + carla.Location(x=0,y=0,z=35) 
@@ -65,6 +65,9 @@ def main():
                 
                 # spectator.set_transform(carla.Transform(carla.Location(x=loc.x,y=loc.y,z=35),carla.Rotation(yaw=0,pitch=-90,roll=0)))           
                 frames += 1
+
+                world.tick()
+
             except Exception as e:
                 print(str(e))
      
