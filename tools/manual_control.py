@@ -370,13 +370,13 @@ class World(object):
 # -- KeyboardControl -----------------------------------------------------------
 # ==============================================================================
 
-
 class KeyboardControl(object):
     """Class that handles keyboard input."""
     def __init__(self, world, start_in_autopilot):
         self._autopilot_enabled = start_in_autopilot
         self._ackermann_enabled = False
         self._ackermann_reverse = 1
+        self.save_flag = False
         if isinstance(world.player, carla.Vehicle):
             self._control = carla.VehicleControl()
             self._ackermann_control = carla.VehicleAckermannControl()
@@ -413,7 +413,8 @@ class KeyboardControl(object):
                 elif event.key == K_v and pygame.key.get_mods() & KMOD_SHIFT:
                     world.next_map_layer(reverse=True)
                 elif event.key == K_v:
-                    world.next_map_layer()
+                    # world.next_map_layer()
+                    self.save_flag = ~(self.save_flag)
                 elif event.key == K_b and pygame.key.get_mods() & KMOD_SHIFT:
                     world.load_map_layer(unload=True)
                 elif event.key == K_b:
@@ -1276,12 +1277,8 @@ def game_loop(args):
             sim_world.tick()
         else:
             sim_world.wait_for_tick()
-            pctrl=world.player.get_control()
-            control_np = np.array([pctrl.throttle,pctrl.steer,pctrl.brake,pctrl.hand_brake,pctrl.reverse,pctrl.manual_gear_shift,pctrl.gear])
-            if controls_np is None:
-                controls_np = control_np
-            else:
-                controls_np = np.vstack(controls_np, control_np)
+            
+            
         clock = pygame.time.Clock()
         while True:
             if args.sync:
@@ -1289,6 +1286,15 @@ def game_loop(args):
             clock.tick_busy_loop(60)
             if controller.parse_events(client, world, clock, args.sync):
                 return
+
+            if controller.save_flag:
+                pctrl=world.player.get_control()
+                control_np = np.array([pctrl.throttle,pctrl.steer,pctrl.brake,pctrl.hand_brake,pctrl.reverse,pctrl.manual_gear_shift,pctrl.gear])
+                if controls_np is None:
+                    controls_np = control_np
+                else:
+                    controls_np = np.vstack([controls_np, control_np])
+            
             world.tick(clock)
             world.render(display)
             pygame.display.flip()

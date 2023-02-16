@@ -59,6 +59,8 @@ def producer(transQ:JoinableQueue, args):
     log_stream.setFormatter(log_format)
     logger.addHandler(log_stream)
 
+    controls_np = np.load('control_test.npy')
+
     try:
         
         hero_actor_id, client, original_settings, npc_vehicle_list, npc_walker_list, npc_walker_id, npc_walker_actors = config_sim_scene(args)
@@ -81,6 +83,18 @@ def producer(transQ:JoinableQueue, args):
         frame_counter = 0
         cur_frame = 1
         while frame_counter < (config_settings['save_frames']+config_settings['ignore_frames']):
+
+            hero_control = carla.VehicleControl(
+                float(controls_np[cur_frame-1][0]),
+                float(controls_np[cur_frame-1][1]),
+                float(controls_np[cur_frame-1][2]),
+                bool(controls_np[cur_frame-1][3]),
+                bool(controls_np[cur_frame-1][4]),
+                bool(controls_np[cur_frame-1][5]),
+                int(controls_np[cur_frame-1][6]),
+            )
+
+            hero_actor.apply_control(hero_control)
 
             # Tick the server
             world.tick()

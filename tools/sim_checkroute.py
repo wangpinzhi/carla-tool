@@ -8,6 +8,7 @@ import carla
 import random,argparse
 from utilities import config_sim_scene
 import logging,time,json
+import numpy as np
 
 def get_args():
     parser = argparse.ArgumentParser(description='parameters for collecting data')
@@ -44,6 +45,8 @@ def main():
     
     random.seed(config_settings["random_seed"])
 
+    controls_np = np.load('control_test.npy')
+
     try:
         
         hero_actor_id, client, original_settings, npc_vehicle_list, npc_walker_list, npc_walker_id, npc_walker_actors = config_sim_scene(args)
@@ -51,13 +54,25 @@ def main():
         hero_actor = world.get_actor(hero_actor_id)
         spectator = world.get_spectator()
         frames = 1 
-        hero_actor.set_autopilot(True, 8000)
+        hero_actor.set_autopilot(False, 8000)
         while True:
             try:
                 print(f'frames:{frames}',end='\r',flush=True)
                 # Tick the server
-                world.wait_for_tick()
+                # world.wait_for_tick()
                 
+                hero_control = carla.VehicleControl(
+                    float(controls_np[frames-1][0]),
+                    float(controls_np[frames-1][1]),
+                    float(controls_np[frames-1][2]),
+                    bool(controls_np[frames-1][3]),
+                    bool(controls_np[frames-1][4]),
+                    bool(controls_np[frames-1][5]),
+                    int(controls_np[frames-1][6]),
+                )
+
+                hero_actor.apply_control(hero_control)
+
                 # 将CARLA界面摄像头跟随ego_vehicle动
                 loc = hero_actor.get_transform().location + carla.Location(x=0,y=0,z=35) 
                 # 车后视角
