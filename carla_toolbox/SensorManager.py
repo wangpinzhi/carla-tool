@@ -90,42 +90,52 @@ class SensorManager(ActorManager):
         if type in ['CubemapRGB','CubemapDepth']:
             cube_cams = {}
 
-            front_transform = transform
-            actor = self._world.spawn_actor(blueprint, front_transform, attach_actor)
-            cube_cams['front'] = actor.id
+            front_actor = self.world.spawn_actor(blueprint, transform, attach_actor)
+            cube_cams['front'] = front_actor.id
 
             left_transform = transform
             left_transform.rotation.yaw -= 90
-            actor = self._world.spawn_actor(blueprint, left_transform, attach_actor)
+            actor = self.world.spawn_actor(blueprint, left_transform, attach_actor)
             cube_cams['left'] = actor.id
 
             right_transform = transform
             right_transform.rotation.yaw += 90
-            actor = self._world.spawn_actor(blueprint, right_transform, attach_actor)
+            actor = self.world.spawn_actor(blueprint, right_transform, attach_actor)
             cube_cams['right'] = actor.id
 
             back_transform = transform
             back_transform.rotation.yaw += 180
-            actor = self._world.spawn_actor(blueprint, back_transform, attach_actor)
+            actor = self.world.spawn_actor(blueprint, back_transform, attach_actor)
             cube_cams['back'] = actor.id
 
             up_transform = transform
             up_transform.rotation.pitch += 90
-            actor =  self._world.spawn_actor(blueprint, up_transform, attach_actor)
+            actor =  self.world.spawn_actor(blueprint, up_transform, attach_actor)
             cube_cams['up'] = actor.id
 
             down_transform = transform
             down_transform.rotation.pitch -= 90
-            actor = self._world.spawn_actor(blueprint, down_transform, attach_actor)
+            actor = self.world.spawn_actor(blueprint, down_transform, attach_actor)
             cube_cams['down'] = actor.id
 
             cm_cam_unit = CubemapCameraUnit(nameId,cube_cams,save_path)
             self._CubemapCameraUnit_list.append(cm_cam_unit)
+    
+    def destroy_all_actors(self) -> int:
+        destroy_nums = 0
+        # destroy cubeactor
+        for cubesensor_unit in self._CubemapCameraUnit_list:
+            for cube_face in ['front','left','right','back','up','down']:
+                actor = self.world.get_actor(cubesensor_unit.cube_cams[cube_face])
+                actor.stop()
+                print(actor.destroy())
+            destroy_nums += 1
+        return destroy_nums
 
     def set_sensors_listen(self):
         for cubesensor_unit in self._CubemapCameraUnit_list:
             for cube_face in ['front','left','right','back','up','down']:
-                sensor = self._world.get_actor(cubesensor_unit.cube_cams[cube_face])
+                sensor = self.world.get_actor(cubesensor_unit.cube_cams[cube_face])
                 # sensor.listen(lambda data, cube_face=cube_face:cubesensor_unit.cubemap_data_callback(cube_face, data))
                 sensor.listen(lambda data, unit=cubesensor_unit, cube_face=cube_face:cubemap_data_callback(unit, cube_face, data))
                 self.__sensors.append(sensor)
@@ -137,13 +147,4 @@ class SensorManager(ActorManager):
     def get_sensor_nums(self) -> int:
         return len(self._CubemapCameraUnit_list)
 
-    def destroy_all_actors(self) -> int:
-        destroy_nums = 0
-        # destroy cubeactor
-        for cubesensor_unit in self._CubemapCameraUnit_list:
-            for cube_face in ['front','left','right','back','up','down']:
-                actor = self._world.get_actor(cubesensor_unit.cube_cams[cube_face])
-                actor.stop()
-                print(actor.destroy())
-            destroy_nums += 1
-        return destroy_nums
+    

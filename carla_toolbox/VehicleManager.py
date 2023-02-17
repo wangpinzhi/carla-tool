@@ -1,5 +1,6 @@
 import carla
 import numpy as np
+from ActorManager import ActorUnit,ActorManager
 
 class VehicleUnit:
     def __init__(self,  name_id:str,
@@ -32,9 +33,10 @@ class VehicleUnit:
         
 
 
-class VehicleManager:
+class VehicleManager(ActorManager):
+    
     def __init__(self, world:carla.World) -> None:
-        self._world = world
+        super().__init__(world)
         self._vehicleUnit_list : list[VehicleUnit] = []
     
     def add_vehicle_actor(self, nameId:str,
@@ -43,15 +45,17 @@ class VehicleManager:
                                 ctrl_type:str='Static', 
                                 ctrl_file:str=None):
 
-        vehicle_actor = self._world.spawn_actor(blueprint, transform)
+        vehicle_actor = self.world.spawn_actor(blueprint, transform)
         vehicle_unit = VehicleUnit(nameId, vehicle_actor.id, ctrl_type, ctrl_file)
         self._vehicleUnit_list.append(vehicle_unit)
-    
-    def get_actor_by_actorId(self, actorId:int):
+
+    def destroy_all_actors(self) -> int:
+        destroy_nums = 0
         for vehicle_unit in self._vehicleUnit_list:
-            if actorId == vehicle_unit.actorId:
-                return self._world.get_actor(vehicle_unit.actorId)
-        print(f'Not found actorID:{actorId} actor')
+            vehicle_actor = self.world.get_actor(vehicle_unit.actorId)
+            if vehicle_actor.destroy():
+                destroy_nums += 1
+        return destroy_nums
 
     def get_actor_by_nameId(self, nameId:str):
         for vehicle_unit in self._vehicleUnit_list:
@@ -62,24 +66,18 @@ class VehicleManager:
     def enable_autopilot(self):
         for vehicle_unit in self._vehicleUnit_list:
             if vehicle_unit.ctrlType=='Autopilot':
-                vehicle_actor = self._world.get_actor(vehicle_unit.actorId)
+                vehicle_actor = self.world.get_actor(vehicle_unit.actorId)
                 vehicle_actor.set_autopilot(True)
 
     def flush_all_vehicle(self):
         for vehicle_unit in self._vehicleUnit_list:
             if vehicle_unit.ctrlType=='File' and vehicle_unit.ctrlCounter <= vehicle_unit.maxCounter:
                 vehicle_ctrl = vehicle_unit.get_VehicleControl()
-                vehicle_actor = self._world.get_actor(vehicle_unit.actorId)
+                vehicle_actor = self.world.get_actor(vehicle_unit.actorId)
                 vehicle_actor.apply_control(vehicle_ctrl)
             
     def get_vehicle_nums(self) -> int:
         return len(self._vehicleUnit_list)
 
-    def destroy_all_actors(self) -> int:
-        destroy_nums = 0
-        for vehicle_unit in self._vehicleUnit_list:
-            vehicle_actor = self._world.get_actor(vehicle_unit.actorId)
-            if vehicle_actor.destroy():
-                destroy_nums += 1
-        return destroy_nums
+    
 

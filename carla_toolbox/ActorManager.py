@@ -10,10 +10,10 @@ class ActorUnit:
 class ActorManager:
     
     def __init__(self, world:carla.World) -> None:
-        self._world = world
+        self.world = world
 
     def get_actor_by_actorId(self, actorId:int):
-        actor = self._world.get_actor(actorId)
+        actor = self.world.get_actor(actorId)
         if not actor:
             print(f'Not found actorID:{actorId} actor')
             return

@@ -113,8 +113,6 @@ class WorldManager:
 
         print(f'Spawn {self._sm.get_sensor_nums()} / {len(dict_list)} sensors')
 
-
-
     def _destroy_all_vehicles(self):
         print(f'Destroy {self._vm.destroy_all_actors()} / {self._vm.get_vehicle_nums()} vehicles')
     
@@ -156,7 +154,7 @@ class WorldManager:
         
         for dict_part in self._dict_sensorConfig['parts']:
 
-            print('Run', dict_part['name'])
+            print(f'|*******Run', dict_part['name'], '*******|')
             self._spawn_vehicles() # spawn vehicles
             self._spawn_sensors(dict_part['sensors']) # spawn sensors
 
