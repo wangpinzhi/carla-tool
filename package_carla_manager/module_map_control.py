@@ -13,7 +13,7 @@ def function_set_map(parameter_client: carla.Client,
     """
 
     # get current map name
-    local_current_map = parameter_client.get_world().get_map().name.spilt('/')[-1]
+    local_current_map = parameter_client.get_world().get_map().name.split('/')[-1]
 
     # load new map
     if parameter_map['name'] != local_current_map:
