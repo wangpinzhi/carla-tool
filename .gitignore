@@ -6,3 +6,4 @@ tools/generate_traffic.py
 *.pyc
 video/
 scenes/
+control_test.npy
