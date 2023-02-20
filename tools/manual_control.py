@@ -439,9 +439,9 @@ class KeyboardControl(object):
                         world.constant_velocity_enabled = False
                         world.hud.notification("Disabled Constant Velocity Mode")
                     else:
-                        world.player.enable_constant_velocity(carla.Vector3D(17, 0, 0))
+                        world.player.enable_constant_velocity(carla.Vector3D(3, 0, 0))
                         world.constant_velocity_enabled = True
-                        world.hud.notification("Enabled Constant Velocity Mode at 60 km/h")
+                        world.hud.notification("Enabled Constant Velocity Mode at 10 km/h")
                 elif event.key == K_o:
                     try:
                         if world.doors_are_open:

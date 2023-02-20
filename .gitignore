@@ -7,3 +7,4 @@ tools/generate_traffic.py
 video/
 scenes/
 test_save/
+control_test.npy
