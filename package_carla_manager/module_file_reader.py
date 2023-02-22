@@ -40,5 +40,17 @@ def function_get_vehicle_json_list(parameter_file_path: str) -> list:
 
     with open(parameter_file_path) as f:
         local_val_vehicles = json.load(f)['vehicles']
-
     return local_val_vehicles
+
+
+def function_get_sensor_json_list(parameter_file_path: str) -> list:
+    """
+    This function gets list of sensor setting json from 'sensor_config.json'.
+    ClassVehicleManager uses these jsons to spawn sensors and set their state.
+
+    :param parameter_file_path: path to sensor_config.json
+    :return: list of sensor json.
+    """
+    with open(parameter_file_path) as f:
+        local_val_sensor = json.load(f)['sensors']
+    return local_val_sensor
