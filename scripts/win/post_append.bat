@@ -2,7 +2,7 @@
 
 set ROOT_PATH=output/%1_%2
 
-start   python tools/cubemap2erp.py --external_path "%ROOT_PATH%/external.txt"^
+python tools/cubemap2erp.py     --external_path "%ROOT_PATH%/external.txt"^
                                 --cubeW 2560^
                                 --format "npz"^
                                 --cubemap_dir "%ROOT_PATH%/cubemap"^
