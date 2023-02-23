@@ -138,7 +138,7 @@ class ClassCubeSensorUnit(Thread):
         local_val_world.get_actor(self.__local_sensor_group['back']).stop()
 
     def function_destroy(self):
-        self.join(timeout=8.0)
+        self.join(timeout=5.0)
         local_val_world = self.__local_val_root_actor.get_world()
         # First destroy other 5 actor
         local_val_world.get_actor(self.__local_sensor_group['left']).destroy()
@@ -251,7 +251,7 @@ class ClassSensorManager(object):
         for sensor in self.__local_val_sensors:
             sensor.start()
 
-    @func_set_timeout(5.0)
+    @func_set_timeout(10.0)
     def function_sync_sensors(self):
         for sensor in self.__local_val_sensors:
             try:

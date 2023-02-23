@@ -75,7 +75,8 @@ class ClassSimulatorManager(object):
                                                              local_val_sensor_configs)
             global_val_sensor_manager.function_set_save_root_path(self.local_val_save_path)
 
-        except:
+        except Exception as e:
+            print(str(e))
             # destroy all sensors
             global_val_sensor_manager.function_destroy_sensors()
             self.local_val_client.get_world().tick()
