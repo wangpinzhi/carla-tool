@@ -1,7 +1,6 @@
 import carla
 from queue import Queue, Empty
 from threading import Thread
-from threading import RLock
 import numpy as np
 import os
 from func_timeout import func_set_timeout
@@ -54,7 +53,7 @@ class ClassCubeSensorUnit(Thread):
             try:
                 for i in range(6):
                     local_val_name, local_val_data = self.__local_val_save_queue.get(block=True, timeout=5.0)
-                    print(self.name, self.__local_val_name_id, local_val_name, self.__local_val_frame_counter)
+                    # print(self.name, self.__local_val_name_id, local_val_name, self.__local_val_frame_counter)
                     if local_val_name == 'front':
                         local_val_save_data['ex_matrix'] = np.array(local_val_data.transform.get_matrix())
                         local_val_save_data['timestamp'] = local_val_data.timestamp
@@ -226,6 +225,8 @@ class ClassSensorManager(object):
             self.__local_val_sensors.append(ClassCubeSensorUnit(local_val_sensor_config['name_id'],
                                                                 local_val_blueprint,
                                                                 local_val_actor))
+        print('\033[1;33;42m[Spawn Sensors]:\033[0m', '    ',
+              f'\033[1;33;43m{len(self.__local_val_sensors)}/{len(parameter_sensor_configs)}\033[0m')
 
     def function_set_save_root_path(self,
                                     parameter_save_root_path):

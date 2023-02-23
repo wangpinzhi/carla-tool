@@ -19,3 +19,6 @@ def function_set_map(parameter_client: carla.Client,
     if parameter_map['name'] != local_current_map:
         parameter_client.load_world(parameter_map['name'])
 
+    # print info
+    local_val_map_name = parameter_client.get_world().get_map().name.split('/')[-1]
+    print('\033[1;33;42m[MapName]:\033[0m', '    ', f'\033[1;33;43m{local_val_map_name}\033[0m')

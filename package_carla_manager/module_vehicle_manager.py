@@ -199,6 +199,8 @@ class ClassVehicleManager(object):
                                                               local_val_vehicle_config['drive_type'],
                                                               local_val_control_array,
                                                               local_val_constant_velocity))
+        print('\033[1;33;42m[Spawn Vehicles]:\033[0m', '    ',
+              f'\033[1;33;43m{len(self.__local_val_vehicles)}/{len(parameter_vehicle_configs)}\033[0m')
 
     def function_destroy_vehicles(self,
                                   parameter_client: carla.Client):
