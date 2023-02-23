@@ -7,7 +7,7 @@ from func_timeout import func_set_timeout
 import func_timeout
 
 # import global vehicle manager to find vehicle
-from module_vehicle_manager import instance_var_vehicle_manager as global_var_vehicle_manager
+from .module_vehicle_manager import instance_var_vehicle_manager as global_var_vehicle_manager
 
 __all__ = ['instance_var_sensor_manager']
 
@@ -225,8 +225,8 @@ class ClassSensorManager(object):
             self.__local_val_sensors.append(ClassCubeSensorUnit(local_val_sensor_config['name_id'],
                                                                 local_val_blueprint,
                                                                 local_val_actor))
-        print('\033[1;33;42m[Spawn Sensors]:\033[0m', '    ',
-              f'\033[1;33;43m{len(self.__local_val_sensors)}/{len(parameter_sensor_configs)}\033[0m')
+        print('\033[1;32m[Spawn Sensors]:\033[0m', '    ',
+              f'\033[1;33m{len(self.__local_val_sensors)}/{len(parameter_sensor_configs)}\033[0m')
 
     def function_set_save_root_path(self,
                                     parameter_save_root_path):

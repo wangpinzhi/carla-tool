@@ -3,19 +3,19 @@ import random
 from tqdm import tqdm
 
 # read configs from json file.
-from module_file_reader import function_get_map_json, function_get_weather_json
-from module_file_reader import function_get_vehicle_json_list, function_get_sensor_json_list
-from module_file_reader import function_get_save_json
+from .module_file_reader import function_get_map_json, function_get_weather_json
+from .module_file_reader import function_get_vehicle_json_list, function_get_sensor_json_list
+from .module_file_reader import function_get_save_json
 
 # according to the json file, set the world.
-from module_map_control import function_set_map
-from module_weather_control import function_set_weather
+from .module_map_control import function_set_map
+from .module_weather_control import function_set_weather
 
 # import global vehicle manager to control vehicles
-from module_vehicle_manager import instance_var_vehicle_manager as global_var_vehicle_manager
+from .module_vehicle_manager import instance_var_vehicle_manager as global_var_vehicle_manager
 
 # import global sensor manager to control sensors
-from module_sensor_manager import instance_var_sensor_manager as global_val_sensor_manager
+from .module_sensor_manager import instance_var_sensor_manager as global_val_sensor_manager
 
 
 class ClassSimulatorManager(object):
@@ -42,12 +42,12 @@ class ClassSimulatorManager(object):
         self.local_val_client.set_timeout(20.0)  # 20s timeout
         self.local_val_scene_config_path = parameter_path_scene
         self.local_val_sensor_config_path = parameter_path_sensor
-        print('\033[1;33;42m[Scene Config Path]:\033[0m', '    ',
-              f'\033[1;33;43m{self.local_val_scene_config_path}\033[0m')
-        print('\033[1;33;42m[Sensor Config Path]:\033[0m', '    ',
-              f'\033[1;33;43m{self.local_val_sensor_config_path}\033[0m')
-        print('\033[1;33;42m[Save Data Path]:\033[0m', '    ',
-              f'\033[1;33;43m{self.local_val_save_path}\033[0m')
+        print('\033[1;32m[Scene Config Path]:\033[0m', '    ',
+              f'\033[1;33m{self.local_val_scene_config_path}\033[0m')
+        print('\033[1;32m[Sensor Config Path]:\033[0m', '    ',
+              f'\033[1;33m{self.local_val_sensor_config_path}\033[0m')
+        print('\033[1;32m[Save Data Path]:\033[0m', '    ',
+              f'\033[1;33m{self.local_val_save_path}\033[0m')
 
     def function_init_world(self) -> None:
         """
@@ -56,19 +56,32 @@ class ClassSimulatorManager(object):
 
         :return:
         """
+        try:
+            # set map
+            local_val_map = function_get_map_json(self.local_val_scene_config_path)
+            function_set_map(self.local_val_client, local_val_map)
 
-        # set map
-        local_val_map = function_get_map_json(self.local_val_scene_config_path)
-        function_set_map(self.local_val_client, local_val_map)
+            # set weather
+            local_val_weather = function_get_weather_json(self.local_val_scene_config_path)
+            function_set_weather(self.local_val_client.get_world(), local_val_weather)
 
-        # set weather
-        local_val_weather = function_get_weather_json(self.local_val_scene_config_path)
-        function_set_weather(self.local_val_client.get_world(), local_val_weather)
+            # spawn vehicles
+            local_val_vehicle_configs = function_get_vehicle_json_list(self.local_val_scene_config_path)
+            global_var_vehicle_manager.function_spawn_vehicles(self.local_val_client,
+                                                               local_val_vehicle_configs)
+            # spawn sensors
+            local_val_sensor_configs = function_get_sensor_json_list(self.local_val_sensor_config_path)
+            global_val_sensor_manager.function_spawn_sensors(self.local_val_client,
+                                                             local_val_sensor_configs)
+            global_val_sensor_manager.function_set_save_root_path(self.local_val_save_path)
 
-        # spawn vehicles
-        local_val_vehicle_configs = function_get_vehicle_json_list(self.local_val_scene_config_path)
-        global_var_vehicle_manager.function_spawn_vehicles(self.local_val_client,
-                                                           local_val_vehicle_configs)
+        except:
+            # destroy all sensors
+            global_val_sensor_manager.function_destroy_sensors()
+            self.local_val_client.get_world().tick()
+
+            # destroy all vehicles
+            global_var_vehicle_manager.function_destroy_vehicles(self.local_val_client)
 
     def function_start_sim_collect(self):
         try:
@@ -78,12 +91,6 @@ class ClassSimulatorManager(object):
             local_val_frame_start = local_val_save_config['frame_start']
             local_val_frame_end = local_val_save_config['frame_end']
             local_val_frame_num = local_val_frame_end - local_val_frame_start + 1
-
-            # spawn sensors
-            local_val_sensor_configs = function_get_sensor_json_list(self.local_val_sensor_config_path)
-            global_val_sensor_manager.function_spawn_sensors(self.local_val_client,
-                                                             local_val_sensor_configs)
-            global_val_sensor_manager.function_set_save_root_path(self.local_val_save_path)
 
             # get current world setting and save it
             self.local_val_origin_world_settings = self.local_val_client.get_world().get_settings()
@@ -114,6 +121,7 @@ class ClassSimulatorManager(object):
             # stop all sensors
             # global_val_sensor_manager.function_stop_sensors()
             # self.local_val_client.get_world().tick()
+
             # destroy all sensors
             global_val_sensor_manager.function_destroy_sensors()
             self.local_val_client.get_world().tick()
