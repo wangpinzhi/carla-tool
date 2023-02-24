@@ -266,6 +266,7 @@ class ClassSensorManager(object):
     def function_destroy_sensors(self):
         for sensor in self.__local_val_sensors:
             sensor.function_destroy()
+        self.__local_val_sensors = []
 
 
 def function_cube_sensor_callback(parameter_data: carla.SensorData,

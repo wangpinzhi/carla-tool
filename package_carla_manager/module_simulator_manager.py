@@ -1,3 +1,5 @@
+import time
+
 import carla
 import random
 from tqdm import tqdm
@@ -118,32 +120,34 @@ class ClassSimulatorManager(object):
                     global_val_sensor_manager.function_sync_sensors()  # check sensor data receive ready or not
                     local_val_frame_start += 1
                     pbar.update(1)
-
         finally:
             # stop all sensors
             # global_val_sensor_manager.function_stop_sensors()
             # self.local_val_client.get_world().tick()
-
             # destroy all sensors
             global_val_sensor_manager.function_destroy_sensors()
             self.local_val_client.get_world().tick()
-
             # recover world settings
             self.local_val_client.get_world().apply_settings(self.local_val_origin_world_settings)
-
-            # destroy all vehicles
-            global_var_vehicle_manager.function_destroy_vehicles(self.local_val_client)
 
     def function_start_sim_collect(self,
                                    parameter_split_num: int = 3):
         local_val_sensor_configs = function_get_sensor_json_list(self.local_val_sensor_config_path)
         print('\033[1;32m[Split Sensors Num]:\033[0m', '    ',
               f'\033[1;33m{parameter_split_num}\033[0m')
-        local_val_item_nums = int(len(local_val_sensor_configs)/parameter_split_num) + 1
-        for i in range(parameter_split_num):
-            local_val_part = local_val_sensor_configs[i*parameter_split_num:i*parameter_split_num+local_val_item_nums]
-            print('\033[1;32m[Part]:\033[0m', '    ', f'\033[1;33m{str(local_val_part)}\033[0m')
-            self._function_sim_one_step(local_val_part, i+1)
+        local_val_item_nums = int(len(local_val_sensor_configs) / parameter_split_num) + 1
+        try:
+            for i in range(parameter_split_num):
+                local_val_part = local_val_sensor_configs[
+                                 i * parameter_split_num:i * parameter_split_num + local_val_item_nums]
+                # get sensors
+                local_val_part_sensors = [item['name_id'] for item in local_val_part]
+                print('\033[1;32m[Part]:\033[0m', '    ', f'\033[1;33m{str(local_val_part_sensors)}\033[0m')
+                self._function_sim_one_step(local_val_part, i + 1)
+                time.sleep(3.0)  # sleep 3s
+        finally:
+            # destroy all vehicles
+            global_var_vehicle_manager.function_destroy_vehicles(self.local_val_client)
 
 
 if __name__ == '__main__':
