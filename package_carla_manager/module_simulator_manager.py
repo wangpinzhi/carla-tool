@@ -69,11 +69,6 @@ class ClassSimulatorManager(object):
             local_val_vehicle_configs = function_get_vehicle_json_list(self.local_val_scene_config_path)
             global_var_vehicle_manager.function_spawn_vehicles(self.local_val_client,
                                                                local_val_vehicle_configs)
-            # spawn sensors
-            local_val_sensor_configs = function_get_sensor_json_list(self.local_val_sensor_config_path)
-            global_val_sensor_manager.function_spawn_sensors(self.local_val_client,
-                                                             local_val_sensor_configs)
-            global_val_sensor_manager.function_set_save_root_path(self.local_val_save_path)
 
         except Exception as e:
             print(str(e))
@@ -84,8 +79,14 @@ class ClassSimulatorManager(object):
             # destroy all vehicles
             global_var_vehicle_manager.function_destroy_vehicles(self.local_val_client)
 
-    def function_start_sim_collect(self):
+    def _function_sim_one_step(self,
+                               parameter_sensor_config,
+                               parameter_part):
         try:
+            # spawn sensors
+            global_val_sensor_manager.function_spawn_sensors(self.local_val_client,
+                                                             parameter_sensor_config)
+            global_val_sensor_manager.function_set_save_root_path(self.local_val_save_path)
 
             # get save setting
             local_val_save_config = function_get_save_json(self.local_val_sensor_config_path)
@@ -106,8 +107,8 @@ class ClassSimulatorManager(object):
             global_val_sensor_manager.function_listen_sensors()
             global_val_sensor_manager.function_start_sensors()
 
-            with tqdm(total=local_val_frame_num, unit='frame', leave=True) as pbar:
-                pbar.set_description('Processing:')
+            with tqdm(total=local_val_frame_num, unit='frame', leave=True, colour='blue') as pbar:
+                pbar.set_description(f'Processing {parameter_part}:')
                 while True:
                     if local_val_frame_start > local_val_frame_end:
                         break
@@ -132,6 +133,17 @@ class ClassSimulatorManager(object):
 
             # destroy all vehicles
             global_var_vehicle_manager.function_destroy_vehicles(self.local_val_client)
+
+    def function_start_sim_collect(self,
+                                   parameter_split_num: int = 3):
+        local_val_sensor_configs = function_get_sensor_json_list(self.local_val_sensor_config_path)
+        print('\033[1;32m[Split Sensors Num]:\033[0m', '    ',
+              f'\033[1;33m{parameter_split_num}\033[0m')
+        local_val_item_nums = int(len(local_val_sensor_configs)/parameter_split_num) + 1
+        for i in range(parameter_split_num):
+            local_val_part = local_val_sensor_configs[i*parameter_split_num:i*parameter_split_num+local_val_item_nums]
+            print('\033[1;32m[Part]:\033[0m', '    ', f'\033[1;33m{str(local_val_part)}\033[0m')
+            self._function_sim_one_step(local_val_part, i+1)
 
 
 if __name__ == '__main__':

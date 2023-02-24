@@ -39,7 +39,6 @@ class Cubemap2Fisheye:
 
         self.invalidMask = (fish_theta > self.FovTh)
         # fish_theta[self.invalidMask] = 0.000001
-
         z = np.cos(fish_theta)
         x = np.sin(fish_theta) * np.cos(fish_phi)
         y = np.sin(fish_theta) * np.sin(fish_phi)
