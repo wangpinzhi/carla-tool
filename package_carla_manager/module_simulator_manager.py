@@ -58,33 +58,23 @@ class ClassSimulatorManager(object):
 
         :return:
         """
-        try:
-            # set map
-            local_val_map = function_get_map_json(self.local_val_scene_config_path)
-            function_set_map(self.local_val_client, local_val_map)
+        # set map
+        local_val_map = function_get_map_json(self.local_val_scene_config_path)
+        function_set_map(self.local_val_client, local_val_map)
 
-            # set weather
-            local_val_weather = function_get_weather_json(self.local_val_scene_config_path)
-            function_set_weather(self.local_val_client.get_world(), local_val_weather)
-
-            # spawn vehicles
-            local_val_vehicle_configs = function_get_vehicle_json_list(self.local_val_scene_config_path)
-            global_var_vehicle_manager.function_spawn_vehicles(self.local_val_client,
-                                                               local_val_vehicle_configs)
-
-        except Exception as e:
-            print(str(e))
-            # destroy all sensors
-            global_val_sensor_manager.function_destroy_sensors()
-            self.local_val_client.get_world().tick()
-
-            # destroy all vehicles
-            global_var_vehicle_manager.function_destroy_vehicles(self.local_val_client)
+        # set weather
+        local_val_weather = function_get_weather_json(self.local_val_scene_config_path)
+        function_set_weather(self.local_val_client.get_world(), local_val_weather)
 
     def _function_sim_one_step(self,
                                parameter_sensor_config,
                                parameter_part):
         try:
+            # spawn vehicles
+            local_val_vehicle_configs = function_get_vehicle_json_list(self.local_val_scene_config_path)
+            global_var_vehicle_manager.function_spawn_vehicles(self.local_val_client,
+                                                               local_val_vehicle_configs)
+
             # spawn sensors
             global_val_sensor_manager.function_spawn_sensors(self.local_val_client,
                                                              parameter_sensor_config)
@@ -121,14 +111,13 @@ class ClassSimulatorManager(object):
                     local_val_frame_start += 1
                     pbar.update(1)
         finally:
-            # stop all sensors
-            # global_val_sensor_manager.function_stop_sensors()
-            # self.local_val_client.get_world().tick()
             # destroy all sensors
             global_val_sensor_manager.function_destroy_sensors()
             self.local_val_client.get_world().tick()
             # recover world settings
             self.local_val_client.get_world().apply_settings(self.local_val_origin_world_settings)
+            # destroy all vehicles
+            global_var_vehicle_manager.function_destroy_vehicles(self.local_val_client)
 
     def function_start_sim_collect(self,
                                    parameter_split_num: int = 3):
@@ -136,18 +125,14 @@ class ClassSimulatorManager(object):
         print('\033[1;32m[Split Sensors Num]:\033[0m', '    ',
               f'\033[1;33m{parameter_split_num}\033[0m')
         local_val_item_nums = int(len(local_val_sensor_configs) / parameter_split_num) + 1
-        try:
-            for i in range(parameter_split_num):
-                local_val_part = local_val_sensor_configs[
-                                 i * parameter_split_num:i * parameter_split_num + local_val_item_nums]
-                # get sensors
-                local_val_part_sensors = [item['name_id'] for item in local_val_part]
-                print('\033[1;32m[Part]:\033[0m', '    ', f'\033[1;33m{str(local_val_part_sensors)}\033[0m')
-                self._function_sim_one_step(local_val_part, i + 1)
-                time.sleep(3.0)  # sleep 3s
-        finally:
-            # destroy all vehicles
-            global_var_vehicle_manager.function_destroy_vehicles(self.local_val_client)
+        for i in range(parameter_split_num):
+            local_val_part = local_val_sensor_configs[
+                             i * parameter_split_num:i * parameter_split_num + local_val_item_nums]
+            # get sensors
+            local_val_part_sensors = [item['name_id'] for item in local_val_part]
+            print('\033[1;32m[Part]:\033[0m', '    ', f'\033[1;33m{str(local_val_part_sensors)}\033[0m')
+            self._function_sim_one_step(local_val_part, i + 1)
+            time.sleep(1.0)
 
 
 if __name__ == '__main__':

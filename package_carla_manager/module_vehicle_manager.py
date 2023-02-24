@@ -214,6 +214,7 @@ class ClassVehicleManager(object):
         for local_val_vehicle_unit in self.__local_val_vehicles:
             local_val_command_batch.extend(local_val_vehicle_unit.function_destroy())
         parameter_client.apply_batch(local_val_command_batch)
+        self.__local_val_vehicles = []
 
     def function_init_vehicles(self,
                                parameter_client: carla.Client):
