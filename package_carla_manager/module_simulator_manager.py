@@ -69,22 +69,24 @@ class ClassSimulatorManager(object):
     def _function_sim_one_step(self,
                                parameter_sensor_config,
                                parameter_part):
+        local_val_counter = 0
         try:
-            # spawn vehicles
-            local_val_vehicle_configs = function_get_vehicle_json_list(self.local_val_scene_config_path)
-            global_var_vehicle_manager.function_spawn_vehicles(self.local_val_client,
-                                                               local_val_vehicle_configs)
-
-            # spawn sensors
-            global_val_sensor_manager.function_spawn_sensors(self.local_val_client,
-                                                             parameter_sensor_config)
-            global_val_sensor_manager.function_set_save_root_path(self.local_val_save_path)
-
+            
             # get save setting
             local_val_save_config = function_get_save_json(self.local_val_sensor_config_path)
             local_val_frame_start = local_val_save_config['frame_start']
             local_val_frame_end = local_val_save_config['frame_end']
             local_val_frame_num = local_val_frame_end - local_val_frame_start + 1
+
+            # spawn vehicles
+            local_val_vehicle_configs = function_get_vehicle_json_list(self.local_val_scene_config_path)
+            global_var_vehicle_manager.function_spawn_vehicles(self.local_val_client,
+                                                               local_val_vehicle_configs)
+            # spawn sensors
+            global_val_sensor_manager.function_spawn_sensors(local_val_frame_num,
+                                                             self.local_val_client,
+                                                             parameter_sensor_config)
+            global_val_sensor_manager.function_set_save_root_path(self.local_val_save_path)
 
             # get current world setting and save it
             self.local_val_origin_world_settings = self.local_val_client.get_world().get_settings()
@@ -94,6 +96,11 @@ class ClassSimulatorManager(object):
             self.local_val_world_settings.fixed_delta_seconds = 0.05
             self.local_val_world_settings.synchronous_mode = True
             self.local_val_client.get_world().apply_settings(self.local_val_world_settings)
+
+            # skip frames that do not need saving
+            while local_val_counter < local_val_frame_start:
+                self.local_val_client.get_world().tick()
+                local_val_counter += 1
 
             global_var_vehicle_manager.function_init_vehicles(self.local_val_client)  # init vehicles state
             global_val_sensor_manager.function_listen_sensors()
@@ -111,28 +118,29 @@ class ClassSimulatorManager(object):
                     local_val_frame_start += 1
                     pbar.update(1)
         finally:
-            # destroy all sensors
-            global_val_sensor_manager.function_destroy_sensors()
-            self.local_val_client.get_world().tick()
             # recover world settings
             self.local_val_client.get_world().apply_settings(self.local_val_origin_world_settings)
+            # destroy all sensors
+            global_val_sensor_manager.function_destroy_sensors()
             # destroy all vehicles
             global_var_vehicle_manager.function_destroy_vehicles(self.local_val_client)
+            # time.sleep(3.0)
 
     def function_start_sim_collect(self,
                                    parameter_split_num: int = 3):
         local_val_sensor_configs = function_get_sensor_json_list(self.local_val_sensor_config_path)
+        print('\033[1;32m[Total Sensors Num]:\033[0m', '    ',
+              f'\033[1;33m{len(local_val_sensor_configs)}\033[0m')
         print('\033[1;32m[Split Sensors Num]:\033[0m', '    ',
               f'\033[1;33m{parameter_split_num}\033[0m')
         local_val_item_nums = int(len(local_val_sensor_configs) / parameter_split_num) + 1
         for i in range(parameter_split_num):
             local_val_part = local_val_sensor_configs[
-                             i * parameter_split_num:i * parameter_split_num + local_val_item_nums]
+                             i * local_val_item_nums:i * parameter_split_num + local_val_item_nums]
             # get sensors
             local_val_part_sensors = [item['name_id'] for item in local_val_part]
             print('\033[1;32m[Part]:\033[0m', '    ', f'\033[1;33m{str(local_val_part_sensors)}\033[0m')
             self._function_sim_one_step(local_val_part, i + 1)
-            time.sleep(1.0)
 
 
 if __name__ == '__main__':
