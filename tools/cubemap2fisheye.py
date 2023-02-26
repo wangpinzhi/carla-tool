@@ -153,7 +153,7 @@ if __name__ == '__main__':
     parser.add_argument('--fov', type=int, default=190,
                         help='target fisheye fov')
     parser.add_argument('--cubemap_dir', type=str,
-                        default=r'C:\Users\ee136\Documents\temp_carla')
+                        default=r'output\huawei_demo_parking')
     parser.add_argument('--camera', type=str)
     parser.add_argument('--format', type=str, default='jpg')
     parser.add_argument('--cubeW', type=int, default=2560)
@@ -169,7 +169,7 @@ if __name__ == '__main__':
     parser.add_argument('--r_z', type=float, default=0.0,
                         help='the angle of rotation_axis z (°)')
 
-    cam = 'rgb12'
+    cam = 'rgb10'
     args = parser.parse_args()
     args.output_dir = os.path.join(args.output_dir, f'fe_{cam}')
 

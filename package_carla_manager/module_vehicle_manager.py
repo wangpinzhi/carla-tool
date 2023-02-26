@@ -1,6 +1,7 @@
 import random
 import carla
 import numpy as np
+import gc
 
 __all__ = [
     'instance_var_vehicle_manager'
@@ -215,6 +216,7 @@ class ClassVehicleManager(object):
             local_val_command_batch.extend(local_val_vehicle_unit.function_destroy())
         parameter_client.apply_batch(local_val_command_batch)
         del self.__local_val_vehicles[:]
+        gc.collect()
 
     def function_init_vehicles(self,
                                parameter_client: carla.Client):

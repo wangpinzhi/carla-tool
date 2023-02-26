@@ -103,8 +103,8 @@ class ClassSimulatorManager(object):
                 local_val_counter += 1
 
             global_var_vehicle_manager.function_init_vehicles(self.local_val_client)  # init vehicles state
-            global_val_sensor_manager.function_listen_sensors()
             global_val_sensor_manager.function_start_sensors()
+            global_val_sensor_manager.function_listen_sensors()
 
             with tqdm(total=local_val_frame_num, unit='frame', leave=True, colour='blue') as pbar:
                 pbar.set_description(f'Processing {parameter_part}:')
@@ -118,10 +118,12 @@ class ClassSimulatorManager(object):
                     local_val_frame_start += 1
                     pbar.update(1)
         finally:
+            # stop all sensors
+            # global_val_sensor_manager.function_stop_sensors()
             # recover world settings
             self.local_val_client.get_world().apply_settings(self.local_val_origin_world_settings)
             # destroy all sensors
-            global_val_sensor_manager.function_destroy_sensors()
+            global_val_sensor_manager.function_destroy_sensors(self.local_val_client)
             # destroy all vehicles
             global_var_vehicle_manager.function_destroy_vehicles(self.local_val_client)
             # time.sleep(3.0)
@@ -136,11 +138,13 @@ class ClassSimulatorManager(object):
         local_val_item_nums = int(len(local_val_sensor_configs) / parameter_split_num) + 1
         for i in range(parameter_split_num):
             local_val_part = local_val_sensor_configs[
-                             i * local_val_item_nums:i * parameter_split_num + local_val_item_nums]
-            # get sensors
-            local_val_part_sensors = [item['name_id'] for item in local_val_part]
-            print('\033[1;32m[Part]:\033[0m', '    ', f'\033[1;33m{str(local_val_part_sensors)}\033[0m')
-            self._function_sim_one_step(local_val_part, i + 1)
+                             i * local_val_item_nums:i * local_val_item_nums + local_val_item_nums]
+            if len(local_val_part) > 0:
+                # get sensors
+                local_val_part_sensors = [item['name_id'] for item in local_val_part]
+                print('\033[1;32m[Part]:\033[0m', '    ', f'\033[1;33m{str(local_val_part_sensors)}\033[0m')
+                self._function_sim_one_step(local_val_part, i + 1)
+                time.sleep(5.0)
 
 
 if __name__ == '__main__':
