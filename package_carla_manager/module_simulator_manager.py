@@ -1,5 +1,5 @@
 import time
-
+import gc
 import carla
 import random
 from tqdm import tqdm
@@ -42,6 +42,8 @@ class ClassSimulatorManager(object):
         random.seed(parameter_random_seed)
         self.local_val_host = parameter_host
         self.local_val_port = parameter_port
+        self.local_val_client = carla.Client(self.local_val_host, self.local_val_port)# get client
+        self.local_val_client.set_timeout(20.0)  # 20s timeout
         self.local_val_scene_config_path = parameter_path_scene
         self.local_val_sensor_config_path = parameter_path_sensor
         print('\033[1;32m[Scene Config Path]:\033[0m', '    ',
@@ -58,9 +60,7 @@ class ClassSimulatorManager(object):
 
         :return:
         """
-        # get client
-        self.local_val_client = carla.Client(self.local_val_host, self.local_val_port)
-        self.local_val_client.set_timeout(5.0)  # 20s timeout
+        self.local_val_client.set_timeout(60.0)  # 20s timeout
 
         # set map
         local_val_map = function_get_map_json(self.local_val_scene_config_path)
@@ -100,38 +100,46 @@ class ClassSimulatorManager(object):
             self.local_val_world_settings.synchronous_mode = True
             self.local_val_client.get_world().apply_settings(self.local_val_world_settings)
 
+            global_var_vehicle_manager.function_init_vehicles(self.local_val_client)  # init vehicles state
+            
             # skip frames that do not need saving
+            print('\033[1;35m Sikpping Unused Frames\033[0m')
             while local_val_counter < local_val_frame_start:
-                print('\033[1;35m Sikp Unused Frames:\033[0m')
                 global_var_vehicle_manager.function_flush_vehicles(self.local_val_client) # flush
                 self.local_val_client.get_world().tick()
                 local_val_counter += 1
-
-            global_var_vehicle_manager.function_init_vehicles(self.local_val_client)  # init vehicles state
+            
             global_val_sensor_manager.function_start_sensors()
             global_val_sensor_manager.function_listen_sensors()
 
             with tqdm(total=local_val_frame_num, unit='frame', leave=True, colour='blue') as pbar:
                 pbar.set_description(f'Processing')
-                while True:
-                    if local_val_frame_start > local_val_frame_end:
-                        break
+                while local_val_frame_start <= local_val_frame_end:
                     # flush vehicle state
                     global_var_vehicle_manager.function_flush_vehicles(self.local_val_client)
                     self.local_val_client.get_world().tick()  # tick the world
-                    global_val_sensor_manager.function_sync_sensors()  # check sensor data receive ready or not
-                    local_val_frame_start += 1
-                    pbar.update(1)
-        finally:
-            # stop all sensors
-            # global_val_sensor_manager.function_stop_sensors()
-            # recover world settings
-            self.local_val_client.get_world().apply_settings(self.local_val_origin_world_settings)
+                    if global_val_sensor_manager.function_sync_sensors():  # check sensor data receive ready or not
+                        local_val_frame_start += 1
+                        pbar.update(1)
+                    else:
+                        raise Exception('funciton_sync_sensors error')
+
             # destroy all sensors
+            global_val_sensor_manager.function_stop_sensors()
             global_val_sensor_manager.function_destroy_sensors(self.local_val_client)
+            for i in range(100):
+                self.local_val_client.get_world().tick()
+            global_val_sensor_manager.function_clean_sensors()
+            print('\033[1;35m[Destroy All Sensors]\033[0m')
+
             # destroy all vehicles
             global_var_vehicle_manager.function_destroy_vehicles(self.local_val_client)
-            # time.sleep(3.0)
+            self.local_val_client.get_world().tick()
+            print('\033[1;35m[Destroy All Vehicles]\033[0m')
+
+        finally:
+            # recover world settings
+            self.local_val_client.get_world().apply_settings(self.local_val_origin_world_settings)
 
     def function_start_sim_collect(self,
                                    parameter_split_num: int = 3):
@@ -144,7 +152,6 @@ class ClassSimulatorManager(object):
         local_val_item_nums = int(len(local_val_sensor_configs) / parameter_split_num) + 1
         for i in range(parameter_split_num):
             print('\033[1;35m------------------------------------------------------------------------------------------------\033[0m')
-            self.local_val_client = carla.Client(self.local_val_host, self.local_val_port)# get client
             local_val_part = local_val_sensor_configs[
                              i * local_val_item_nums:i * local_val_item_nums + local_val_item_nums]
             if len(local_val_part) > 0:
@@ -152,7 +159,9 @@ class ClassSimulatorManager(object):
                 local_val_part_sensors = [item['name_id'] for item in local_val_part]
                 print(f'\033[1;32m[Part {i+1}]:\033[0m', '    ', f'\033[1;33m{str(local_val_part_sensors)}\033[0m')
                 self._function_sim_one_step(local_val_part)
-                time.sleep(2.0)
+            gc.collect()
+            time.sleep(10.0)
+
 
 
 if __name__ == '__main__':

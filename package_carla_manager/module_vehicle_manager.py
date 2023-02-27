@@ -214,7 +214,7 @@ class ClassVehicleManager(object):
         local_val_command_batch = []
         for local_val_vehicle_unit in self.__local_val_vehicles:
             local_val_command_batch.extend(local_val_vehicle_unit.function_destroy())
-        parameter_client.apply_batch(local_val_command_batch)
+        parameter_client.apply_batch_sync(local_val_command_batch, False)
         del self.__local_val_vehicles[:]
         gc.collect()
 

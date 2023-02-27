@@ -1,5 +1,6 @@
 import gc
 import carla
+import time
 from queue import Queue, Empty
 from threading import Thread
 import numpy as np
@@ -19,7 +20,6 @@ class ClassSensorUnit(Thread):
     def __init__(self,
                  parameter_name_id: str,
                  parameter_life_counter: int,
-                 parameter_blueprint: carla.ActorBlueprint,
                  parameter_root_actor: carla.Actor):
         super(ClassSensorUnit, self).__init__()
         self.__local_val_frame_counter = 0
@@ -34,8 +34,8 @@ class ClassSensorUnit(Thread):
     def function_get_save_queue(self):
         return self.__local_val_save_queue
 
-    def function_get_counter(self):
-        return self.__local_val_frame_counter
+    def function_get__life_counter(self):
+        return self.__local_val_life_counter
 
     def run(self) -> None:
         self.function_save_data()
@@ -46,6 +46,7 @@ class ClassSensorUnit(Thread):
 
     def function_save_data(self):
         while self.__local_val_life_counter > 0:
+            self.__local_val_task_lock.get(block=True, timeout=None)
             local_val_save_data = {}
             try:
                 local_val_data = self.__local_val_save_queue.get(block=True, timeout=None)
@@ -68,12 +69,11 @@ class ClassSensorUnit(Thread):
                 )
                 self.__local_val_frame_counter += 1
                 self.__local_val_life_counter -= 1
-                self.__local_val_task_lock.get(block=True, timeout=None)
-                self.__local_val_task_lock.task_done()
             except Empty:
-                print('Exit Thread :', self.name)
+                print('Empty Error Exit Thread :', self.name)
                 break
-
+            finally:
+                self.__local_val_task_lock.task_done()
             # save data to npz
 
     def function_listen(self,
@@ -94,7 +94,19 @@ class ClassSensorUnit(Thread):
 
     def function_destroy(self,
                          parameter_client: carla.Client):
-        parameter_client.apply_batch([carla.command.DestroyActor(self.__local_val_root_actor.id)])
+        parameter_client.apply_batch_sync([carla.command.DestroyActor(self.__local_val_root_actor.id)], False)
+
+    def function_stop(self):
+        """
+        This function stops the sensor listen method, so sensor will not get any data.
+
+        :return:
+        """
+        self.__local_val_root_actor.stop()
+
+    def function_clean(self):
+        del self.__local_val_store[:]
+    
 
 class ClassCubeSensorUnit(Thread):
     def __init__(self,
@@ -119,8 +131,8 @@ class ClassCubeSensorUnit(Thread):
     def function_get_save_queue(self):
         return self.__local_val_save_queue
 
-    def function_get_counter(self):
-        return self.__local_val_frame_counter
+    def function_get__life_counter(self):
+        return self.__local_val_life_counter
 
     def run(self) -> None:
         self.function_save_data()
@@ -130,7 +142,8 @@ class ClassCubeSensorUnit(Thread):
         self.__local_val_task_lock.join()
 
     def function_save_data(self):
-        while self.__local_val_life_counter > 0:
+        while self.__local_val_life_counter != 0:
+            self.__local_val_task_lock.get(block=True, timeout=None)
             local_val_save_data = {}
             try:
                 for i in range(6):
@@ -161,11 +174,11 @@ class ClassCubeSensorUnit(Thread):
                 )
                 self.__local_val_frame_counter += 1
                 self.__local_val_life_counter -= 1
-                self.__local_val_task_lock.get(block=True, timeout=None)
-                self.__local_val_task_lock.task_done()
             except Empty:
-                print('Exit Thread :', self.name)
+                print('Empty Error Exit Thread :', self.name)
                 break
+            finally:
+                self.__local_val_task_lock.task_done()
 
             # save data to npz
 
@@ -226,7 +239,10 @@ class ClassCubeSensorUnit(Thread):
         local_actors_id = [self.__local_sensor_group['left'], self.__local_sensor_group['right'],
                            self.__local_sensor_group['up'], self.__local_sensor_group['down'],
                            self.__local_sensor_group['back'], self.__local_sensor_group['front']]
-        parameter_client.apply_batch([carla.command.DestroyActor(x) for x in local_actors_id])
+        parameter_client.apply_batch_sync([carla.command.DestroyActor(x) for x in local_actors_id],False)
+        
+    def function_clean(self):
+        del self.__local_val_store[:]
 
 
 class ClassSensorManager(object):
@@ -310,7 +326,6 @@ class ClassSensorManager(object):
             elif local_val_sensor_config['name_id'][0:2] == 'ph':
                 self.__local_val_sensors.append(ClassSensorUnit(local_val_sensor_config['name_id'],
                                                                 parameter_save_frames,
-                                                                local_val_blueprint,
                                                                 local_val_actor))
                 
         print('\033[1;32m[Spawn Sensors]:\033[0m', '    ',
@@ -343,31 +358,40 @@ class ClassSensorManager(object):
         for sensor in self.__local_val_sensors:
             sensor.function_stop()
 
-    @func_set_timeout(10.0)
-    def function_sync_sensors(self):
+    @func_set_timeout(20.0)
+    def function_sync_sensors(self) -> bool:
         for sensor in self.__local_val_sensors:
             try:
                 sensor.function_sync()
             except func_timeout.exceptions.FunctionTimedOut:
                 print('sync_sensors timeout')
+                return False
+        return True
 
     def function_destroy_sensors(self,
                                  parameter_client: carla.Client):
         for sensor in self.__local_val_sensors:
             sensor.join()
+
+        for sensor in self.__local_val_sensors:
             sensor.function_destroy(parameter_client)
+            
+    def function_clean_sensors(self):
+        for sensor in self.__local_val_sensors:
+            sensor.function_clean()
         del self.__local_val_sensors[:]
-        gc.collect()
 
 
 def function_cube_sensor_callback(parameter_data: carla.SensorData,
                                   parameter_name: str,
                                   parameter_cube_sensor: ClassCubeSensorUnit):
-    parameter_cube_sensor.function_get_save_queue().put((parameter_name, parameter_data))
+    if parameter_cube_sensor.function_get__life_counter() != 0:
+        parameter_cube_sensor.function_get_save_queue().put((parameter_name, parameter_data))
 
 def function_sensor_callback(parameter_data: carla.SensorData,
                              parameter_sensor: ClassSensorUnit):
-    parameter_sensor.function_get_save_queue().put(parameter_data)
+    if parameter_sensor.function_get__life_counter() != 0:
+        parameter_sensor.function_get_save_queue().put(parameter_data)
 
 
 instance_var_sensor_manager = ClassSensorManager()
