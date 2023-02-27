@@ -21,7 +21,7 @@ class ClassSensorUnit(Thread):
                  parameter_life_counter: int,
                  parameter_blueprint: carla.ActorBlueprint,
                  parameter_root_actor: carla.Actor):
-        super(ClassCubeSensorUnit, self).__init__()
+        super(ClassSensorUnit, self).__init__()
         self.__local_val_frame_counter = 0
         self.__local_val_life_counter = parameter_life_counter
         self.__local_val_save_path = ''

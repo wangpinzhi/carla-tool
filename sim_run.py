@@ -9,4 +9,4 @@ if __name__ == '__main__':
         parameter_path_save=r'output\huawei_demo_parking\raw_data',
     )
     local_val_simulator_manager.function_init_world()
-    local_val_simulator_manager.function_start_sim_collect(parameter_split_num=3)
+    local_val_simulator_manager.function_start_sim_collect(parameter_split_num=4)
