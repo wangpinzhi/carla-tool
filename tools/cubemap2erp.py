@@ -227,12 +227,12 @@ if __name__ == '__main__':
         if 'depth' in args.camera:
             raw_data = np.load(os.path.join(args.cubemap_dir, f'cm_{cam}', f'cm_{cam}_{frame}.npz'), allow_pickle=True)
             cube = np.zeros([6, 1, args.cubeW, args.cubeW], dtype=np.float32)
-            cube[0, :, :, :] += np.transpose(raw_data['back_data'], (2, 0, 1))[0]
-            cube[1, :, :, :] += np.transpose(raw_data['down_data'], (2, 0, 1))[0]
-            cube[2, :, :, :] += np.transpose(raw_data['front_data'], (2, 0, 1))[0]
-            cube[3, :, :, :] += np.transpose(raw_data['left_data'], (2, 0, 1))[0]
-            cube[4, :, :, :] += np.transpose(raw_data['right_data'], (2, 0, 1))[0]
-            cube[5, :, :, :] += np.transpose(raw_data['up_data'], (2, 0, 1))[0]
+            cube[0, :, :, :] += np.transpose(raw_data['back_data'], (2, 0, 1))[1]
+            cube[1, :, :, :] += np.transpose(raw_data['down_data'], (2, 0, 1))[1]
+            cube[2, :, :, :] += np.transpose(raw_data['front_data'], (2, 0, 1))[1]
+            cube[3, :, :, :] += np.transpose(raw_data['left_data'], (2, 0, 1))[1]
+            cube[4, :, :, :] += np.transpose(raw_data['right_data'], (2, 0, 1))[1]
+            cube[5, :, :, :] += np.transpose(raw_data['up_data'], (2, 0, 1))[1]
 
             cube[0, :, :, :] += np.transpose(raw_data['back_data'], (2, 0, 1))[1] * 256
             cube[1, :, :, :] += np.transpose(raw_data['down_data'], (2, 0, 1))[1] * 256
@@ -241,12 +241,12 @@ if __name__ == '__main__':
             cube[4, :, :, :] += np.transpose(raw_data['right_data'], (2, 0, 1))[1] * 256
             cube[5, :, :, :] += np.transpose(raw_data['up_data'], (2, 0, 1))[1] * 256
 
-            cube[0, :, :, :] += np.transpose(raw_data['back_data'], (2, 0, 1))[2] * 256 * 256
-            cube[1, :, :, :] += np.transpose(raw_data['down_data'], (2, 0, 1))[2] * 256 * 256
-            cube[2, :, :, :] += np.transpose(raw_data['front_data'], (2, 0, 1))[2] * 256 * 256
-            cube[3, :, :, :] += np.transpose(raw_data['left_data'], (2, 0, 1))[2] * 256 * 256
-            cube[4, :, :, :] += np.transpose(raw_data['right_data'], (2, 0, 1))[2] * 256 * 256
-            cube[5, :, :, :] += np.transpose(raw_data['up_data'], (2, 0, 1))[2] * 256 * 256
+            cube[0, :, :, :] += np.transpose(raw_data['back_data'], (2, 0, 1))[0] * 256 * 256
+            cube[1, :, :, :] += np.transpose(raw_data['down_data'], (2, 0, 1))[0] * 256 * 256
+            cube[2, :, :, :] += np.transpose(raw_data['front_data'], (2, 0, 1))[0] * 256 * 256
+            cube[3, :, :, :] += np.transpose(raw_data['left_data'], (2, 0, 1))[0] * 256 * 256
+            cube[4, :, :, :] += np.transpose(raw_data['right_data'], (2, 0, 1))[0] * 256 * 256
+            cube[5, :, :, :] += np.transpose(raw_data['up_data'], (2, 0, 1))[0] * 256 * 256
 
             cube[0, :, :, :] /= (256 * 256 * 256 - 1)
             cube[1, :, :, :] /= (256 * 256 * 256 - 1)
@@ -274,7 +274,6 @@ if __name__ == '__main__':
             out = out_batch.cpu().numpy()
             out = np.squeeze(out, axis=0)
             out = np.squeeze(out, axis=0)
-            print(out.max())
 
             vis_color = cv2.applyColorMap(cv2.convertScaleAbs(out, alpha=255 / 50), cv2.COLORMAP_JET)
             cv2.imwrite(os.path.join(args.output_dir, f'erp_vis_{cam}_{frame}.jpg'), vis_color, [int(cv2.IMWRITE_JPEG_QUALITY), 97])
