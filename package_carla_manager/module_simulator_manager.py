@@ -150,8 +150,8 @@ class ClassSimulatorManager(object):
         print('\033[1;32m[Split Sensors Num]:\033[0m', '    ',
               f'\033[1;33m{parameter_split_num}\033[0m')
         local_val_item_nums = int(len(local_val_sensor_configs) / parameter_split_num) + 1
+        print('\033[1;35m------------------------------------------------------------------------------------------------\033[0m')
         for i in range(parameter_split_num):
-            print('\033[1;35m------------------------------------------------------------------------------------------------\033[0m')
             local_val_part = local_val_sensor_configs[
                              i * local_val_item_nums:i * local_val_item_nums + local_val_item_nums]
             if len(local_val_part) > 0:
@@ -159,8 +159,8 @@ class ClassSimulatorManager(object):
                 local_val_part_sensors = [item['name_id'] for item in local_val_part]
                 print(f'\033[1;32m[Part {i+1}]:\033[0m', '    ', f'\033[1;33m{str(local_val_part_sensors)}\033[0m')
                 self._function_sim_one_step(local_val_part)
-            gc.collect()
-            time.sleep(10.0)
+                gc.collect()
+                time.sleep(5.0)
 
 
 

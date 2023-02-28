@@ -227,12 +227,12 @@ if __name__ == '__main__':
         if 'depth' in args.camera:
             raw_data = np.load(os.path.join(args.cubemap_dir, f'cm_{cam}', f'cm_{cam}_{frame}.npz'), allow_pickle=True)
             cube = np.zeros([6, 1, args.cubeW, args.cubeW], dtype=np.float32)
-            cube[0, :, :, :] += np.transpose(raw_data['back_data'], (2, 0, 1))[1]
-            cube[1, :, :, :] += np.transpose(raw_data['down_data'], (2, 0, 1))[1]
-            cube[2, :, :, :] += np.transpose(raw_data['front_data'], (2, 0, 1))[1]
-            cube[3, :, :, :] += np.transpose(raw_data['left_data'], (2, 0, 1))[1]
-            cube[4, :, :, :] += np.transpose(raw_data['right_data'], (2, 0, 1))[1]
-            cube[5, :, :, :] += np.transpose(raw_data['up_data'], (2, 0, 1))[1]
+            cube[0, :, :, :] += np.transpose(raw_data['back_data'], (2, 0, 1))[2]
+            cube[1, :, :, :] += np.transpose(raw_data['down_data'], (2, 0, 1))[2]
+            cube[2, :, :, :] += np.transpose(raw_data['front_data'], (2, 0, 1))[2]
+            cube[3, :, :, :] += np.transpose(raw_data['left_data'], (2, 0, 1))[2]
+            cube[4, :, :, :] += np.transpose(raw_data['right_data'], (2, 0, 1))[2]
+            cube[5, :, :, :] += np.transpose(raw_data['up_data'], (2, 0, 1))[2]
 
             cube[0, :, :, :] += np.transpose(raw_data['back_data'], (2, 0, 1))[1] * 256
             cube[1, :, :, :] += np.transpose(raw_data['down_data'], (2, 0, 1))[1] * 256

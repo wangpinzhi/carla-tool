@@ -358,7 +358,7 @@ class ClassSensorManager(object):
         for sensor in self.__local_val_sensors:
             sensor.function_stop()
 
-    @func_set_timeout(20.0)
+    @func_set_timeout(3.0)
     def function_sync_sensors(self) -> bool:
         for sensor in self.__local_val_sensors:
             try:
