@@ -190,11 +190,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='parameters for cubemap2panoramic')
 
     # basic settings
-    parser.add_argument('--cubemap_dir', type=str, default='output_invisiable_data_frame100/cubemap')
+    parser.add_argument('--cubemap_dir', type=str, default=r'output\huawei_demo_parking\raw_data')
     parser.add_argument('--camera', type=str, default='depth1')
-    parser.add_argument('--format', type=str, default='npz')
-    parser.add_argument('--external_path', type=str, default='output_invisiable_data_frame100/external.txt')
-    parser.add_argument('--output_dir', type=str, default='output_invisiable_data_frame100/output_erp')
+    parser.add_argument('--output_dir', type=str, default=r'output\huawei_demo_parking\post_data')
     parser.add_argument('--cubeW', type=int, default=2560)
     parser.add_argument('--out_height', type=int, default=2560)
     parser.add_argument('--use_cuda', action='store_true', default=False, help='use gpu to post data')
@@ -203,42 +201,39 @@ if __name__ == '__main__':
 
     cubemap2erp = ClassCubemap2ERP(cubeW=args.cubeW, outH=args.out_height, outW=args.out_height * 2, CUDA=args.use_cuda)
 
-    cube_cos = np.zeros((args.cubeW, args.cubeW), dtype=np.float64)
+    cube_cos = np.zeros((args.cubeW, args.cubeW), dtype=np.float32)
     D = (args.cubeW - 1) / 2
-
     for i in range(args.cubeW):
         for j in range(args.cubeW):
             cube_cos[i][j] = math.sqrt(D * D / ((i - D) * (i - D) + (j - D) * (j - D) + D * D))
 
     # get frames
-    frames = []
-    regex = re.compile(r'(\d)+')
-    with open(args.external_path, 'r') as f:
-        f.readline()
-        for line in f.readlines():
-            s = regex.search(line)
-            frames.append(int(s.group()))
+    frames = [i for i in range(0,200)]
 
     # get cameras type
-    cam = args.camera[3:]
+    cam = args.camera
 
-    outputVis_dir = args.output_dir + 'Vis'
+    
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
-    if not os.path.exists(outputVis_dir):
-        os.makedirs(outputVis_dir)
 
     for frame in tqdm(frames, desc='Cubemap2ERP Processing ', unit='frames'):
         # back down front left right up
         # step 1 readcube
         if 'depth' in args.camera:
-            cube = np.zeros([6, 1, args.cubeW, args.cubeW], dtype=np.float64)
+            raw_data = np.load(os.path.join(args.cubemap_dir, f'cm_{cam}', f'cm_{cam}_{frame}.npz'), allow_pickle=True)
+            cube = np.zeros([6, 1, args.cubeW, args.cubeW], dtype=np.float32)
+            cube[0, :, :, :] = np.transpose(raw_data['back_data'], (2, 0, 1))
+            cube[1, :, :, :] = np.transpose(raw_data['down_data'], (2, 0, 1))
+            cube[2, :, :, :] = np.transpose(raw_data['front_data'], (2, 0, 1))
+            cube[3, :, :, :] = np.transpose(raw_data['left_data'], (2, 0, 1))
+            cube[4, :, :, :] = np.transpose(raw_data['right_data'], (2, 0, 1))
+            cube[5, :, :, :] = np.transpose(raw_data['up_data'], (2, 0, 1))
             for idx, view in [(0, 'back'), (1, 'down'), (2, 'front'), (3, 'left'), (4, 'right'), (5, 'up')]:
                 if args.format == 'npz':
-                    raw = np.load(f"{args.cubemap_dir}/{args.camera}_{view}_{frame}.{args.format}")['arr_0']
+                    
                     # print(raw)
                     # raw = cv2.imread(glob.glob(f"{args.cubemap_dir}/{args.camera}_{view}_{frame}.png")[0],-1)
-                raw = cv2.cvtColor(raw, cv2.COLOR_BGRA2RGB)
                 raw = raw.astype(np.float64)
                 raw = np.transpose(raw, (2, 0, 1))
                 normalized = (raw[0] + raw[1] * 256 + raw[2] * 256 * 256) / (256 * 256 * 256 - 1)
@@ -253,10 +248,7 @@ if __name__ == '__main__':
             out = np.squeeze(out, axis=0)
 
             vis_color = cv2.applyColorMap(cv2.convertScaleAbs(out, alpha=255 / 50), cv2.COLORMAP_JET)
-            im = Image.fromarray(vis_color)
-
-            im.save(os.path.join(outputVis_dir, f'erpVis_{cam}_{frame}.jpg'))
-            np.savez(os.path.join(args.output_dir, f'erp_{cam}_{frame}.npz'), out)
+            np.save(os.path.join(args.output_dir, f'erp_{cam}_{frame}.npy'), out)
 
 
         else:

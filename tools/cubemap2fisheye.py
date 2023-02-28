@@ -153,14 +153,12 @@ if __name__ == '__main__':
     parser.add_argument('--fov', type=int, default=190,
                         help='target fisheye fov')
     parser.add_argument('--cubemap_dir', type=str,
-                        default=r'output\huawei_demo_parking')
+                        default=r'output\huawei_demo_parking\raw_data')
     parser.add_argument('--camera', type=str)
     parser.add_argument('--format', type=str, default='jpg')
     parser.add_argument('--cubeW', type=int, default=2560)
     parser.add_argument('--outW', type=int, default=2560)
-    parser.add_argument('--external_path', type=str, default='output_raw_data/external.txt',
-                        help='path of external.txt')
-    parser.add_argument('--output_dir', type=str, default=r'C:\Users\ee136\Documents\temp_carla')
+    parser.add_argument('--output_dir', type=str, default=r'output\huawei_demo_parking\post_data')
     parser.add_argument('--use_cuda', action='store_true', default=True, help='use gpu to post data')
     parser.add_argument('--r_x', type=float, default=0.0,
                         help='the angle of rotation_axis x (°)')
@@ -169,8 +167,10 @@ if __name__ == '__main__':
     parser.add_argument('--r_z', type=float, default=0.0,
                         help='the angle of rotation_axis z (°)')
 
-    cam = 'rgb10'
+   
     args = parser.parse_args()
+    cam = args.camera
+
     args.output_dir = os.path.join(args.output_dir, f'fe_{cam}')
 
     c2f = Cubemap2Fisheye(args.outW, args.outW, args.fov, Rot=R.from_euler('zyx', [
@@ -181,7 +181,7 @@ if __name__ == '__main__':
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
-    frames = [i for i in range(0, 10)]
+    frames = [i for i in range(0, 200)]
     pbar = tqdm(frames, desc=f'c2f {args.camera}', unit='frames')
 
     for frame in pbar:
@@ -196,17 +196,9 @@ if __name__ == '__main__':
         cube[5, :, :, :] = np.transpose(raw_data['down_data'], (2, 0, 1))
 
         # execute trans
-        start_time = time.time()
         fish = c2f.trans(cube)
         fish = fish.transpose((1, 2, 0))
         fish.astype(np.uint8)
-        trans_img_time = time.time() - start_time
 
-        start_time = time.time()
         cv2.imwrite(os.path.join(args.output_dir, f'fe_{cam}_{frame}.jpg'), fish, [
             int(cv2.IMWRITE_JPEG_QUALITY), 97])
-        save_img_time = time.time() - start_time
-
-        pbar.set_postfix(trans_cost=trans_img_time,
-                         save_cost=save_img_time,
-                         use_cuda=args.use_cuda)
