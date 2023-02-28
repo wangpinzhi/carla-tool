@@ -15,24 +15,28 @@ class ClassCubemap2ERP:
                  parameter_cube_width: int=2560,
                  parameter_out_width: int=5120,
                  parameter_use_cuda: bool=False):
+        
+        self.local_val_out_height = parameter_out_width // 2
+        self.local_val_out_width = parameter_out_width
         # Compute the parameters for projection
-        self.radius = int(0.5 * cubeW)
+        self.radius = int(0.5 * parameter_cube_width)
+        self.CUDA = parameter_use_cuda
 
         # Map equirectangular pixel to longitude and latitude
         # NOTE: Make end a full length since arange have a right open bound [a, b)
-        theta_start = -1 / 2 * np.pi + (np.pi / outW)
+        theta_start = -1 / 2 * np.pi + (np.pi / parameter_out_width)
         theta_end = 3 / 2 * np.pi
-        theta_step = 2 * np.pi / outW
+        theta_step = 2 * np.pi / parameter_out_width
         theta_range = torch.arange(theta_start, theta_end, theta_step, dtype=torch.float32)
 
-        phi_start = -0.5 * np.pi + (0.5 * np.pi / outH)
+        phi_start = -0.5 * np.pi + (0.5 * np.pi / self.local_val_out_height)
         phi_end = 0.5 * np.pi
-        phi_step = np.pi / outH
+        phi_step = np.pi / self.local_val_out_height
         phi_range = torch.arange(phi_start, phi_end, phi_step)
 
         # Stack to get the longitude latitude map
-        self.theta_map = theta_range.unsqueeze(0).repeat(outH, 1)
-        self.phi_map = phi_range.unsqueeze(-1).repeat(1, outW)
+        self.theta_map = theta_range.unsqueeze(0).repeat(self.local_val_out_height, 1)
+        self.phi_map = phi_range.unsqueeze(-1).repeat(1, parameter_out_width)
         self.lonlat_map = torch.stack([self.theta_map, self.phi_map], dim=-1)
 
         # Get mapping relation (h, w, face)
@@ -54,15 +58,15 @@ class ClassCubemap2ERP:
           grids and masks of 6 faces
         """
         # Get the point of equirectangular on 3D ball
-        x_3d = (self.radius * torch.cos(self.phi_map) * torch.cos(self.theta_map)).view(self.outH, self.outW, 1)
-        y_3d = (self.radius * torch.cos(self.phi_map) * torch.sin(self.theta_map)).view(self.outH, self.outW, 1)
-        z_3d = (self.radius * torch.sin(self.phi_map)).view(self.outH, self.outW, 1)
+        x_3d = (self.radius * torch.cos(self.phi_map) * torch.cos(self.theta_map)).view(self.local_val_out_height, self.local_val_out_width, 1)
+        y_3d = (self.radius * torch.cos(self.phi_map) * torch.sin(self.theta_map)).view(self.local_val_out_height, self.local_val_out_width, 1)
+        z_3d = (self.radius * torch.sin(self.phi_map)).view(self.local_val_out_height, self.local_val_out_width, 1)
 
-        self.grid_ball = torch.cat([x_3d, y_3d, z_3d], 2).view(self.outH, self.outW, 3)
+        self.grid_ball = torch.cat([x_3d, y_3d, z_3d], 2).view(self.local_val_out_height, self.local_val_out_width, 3)
 
         # Compute the down grid
         radius_ratio_down = torch.abs(z_3d / self.radius)
-        grid_down_raw = self.grid_ball / radius_ratio_down.view(self.outH, self.outW, 1).expand(-1, -1, 3)
+        grid_down_raw = self.grid_ball / radius_ratio_down.view(self.local_val_out_height, self.local_val_out_width, 1).expand(-1, -1, 3)
         grid_down_w = (-grid_down_raw[:, :, 0].clone() / self.radius).unsqueeze(-1)
         grid_down_h = (-grid_down_raw[:, :, 1].clone() / self.radius).unsqueeze(-1)
         grid_down = torch.cat([grid_down_w, grid_down_h], 2).unsqueeze(0)
@@ -71,7 +75,7 @@ class ClassCubemap2ERP:
 
         # Compute the up grid
         radius_ratio_up = torch.abs(z_3d / self.radius)
-        grid_up_raw = self.grid_ball / radius_ratio_up.view(self.outH, self.outW, 1).expand(-1, -1, 3)
+        grid_up_raw = self.grid_ball / radius_ratio_up.view(self.local_val_out_height, self.local_val_out_width, 1).expand(-1, -1, 3)
         grid_up_w = (-grid_up_raw[:, :, 0].clone() / self.radius).unsqueeze(-1)
         grid_up_h = (grid_up_raw[:, :, 1].clone() / self.radius).unsqueeze(-1)
         grid_up = torch.cat([grid_up_w, grid_up_h], 2).unsqueeze(0)
@@ -80,7 +84,7 @@ class ClassCubemap2ERP:
 
         # Compute the front grid
         radius_ratio_front = torch.abs(y_3d / self.radius)
-        grid_front_raw = self.grid_ball / radius_ratio_front.view(self.outH, self.outW, 1).expand(-1, -1, 3)
+        grid_front_raw = self.grid_ball / radius_ratio_front.view(self.local_val_out_height, self.local_val_out_width, 1).expand(-1, -1, 3)
         grid_front_w = (-grid_front_raw[:, :, 0].clone() / self.radius).unsqueeze(-1)
         grid_front_h = (grid_front_raw[:, :, 2].clone() / self.radius).unsqueeze(-1)
         grid_front = torch.cat([grid_front_w, grid_front_h], 2).unsqueeze(0)
@@ -89,7 +93,7 @@ class ClassCubemap2ERP:
 
         # Compute the back grid
         radius_ratio_back = torch.abs(y_3d / self.radius)
-        grid_back_raw = self.grid_ball / radius_ratio_back.view(self.outH, self.outW, 1).expand(-1, -1, 3)
+        grid_back_raw = self.grid_ball / radius_ratio_back.view(self.local_val_out_height, self.local_val_out_width, 1).expand(-1, -1, 3)
         grid_back_w = (grid_back_raw[:, :, 0].clone() / self.radius).unsqueeze(-1)
         grid_back_h = (grid_back_raw[:, :, 2].clone() / self.radius).unsqueeze(-1)
         grid_back = torch.cat([grid_back_w, grid_back_h], 2).unsqueeze(0)
@@ -98,7 +102,7 @@ class ClassCubemap2ERP:
 
         # Compute the right grid
         radius_ratio_right = torch.abs(x_3d / self.radius)
-        grid_right_raw = self.grid_ball / radius_ratio_right.view(self.outH, self.outW, 1).expand(-1, -1, 3)
+        grid_right_raw = self.grid_ball / radius_ratio_right.view(self.local_val_out_height, self.local_val_out_width, 1).expand(-1, -1, 3)
         grid_right_w = (-grid_right_raw[:, :, 1].clone() / self.radius).unsqueeze(-1)
         grid_right_h = (grid_right_raw[:, :, 2].clone() / self.radius).unsqueeze(-1)
         grid_right = torch.cat([grid_right_w, grid_right_h], 2).unsqueeze(0)
@@ -107,7 +111,7 @@ class ClassCubemap2ERP:
 
         # Compute the left grid
         radius_ratio_left = torch.abs(x_3d / self.radius)
-        grid_left_raw = self.grid_ball / radius_ratio_left.view(self.outH, self.outW, 1).expand(-1, -1, 3)
+        grid_left_raw = self.grid_ball / radius_ratio_left.view(self.local_val_out_height, self.local_val_out_width, 1).expand(-1, -1, 3)
         grid_left_w = (grid_left_raw[:, :, 1].clone() / self.radius).unsqueeze(-1)
         grid_left_h = (grid_left_raw[:, :, 2].clone() / self.radius).unsqueeze(-1)
         grid_left = torch.cat([grid_left_w, grid_left_h], 2).unsqueeze(0)
@@ -132,9 +136,9 @@ class ClassCubemap2ERP:
             raise ValueError("Batch size mismatch!!")
 
         if self.CUDA:
-            output = Variable(torch.zeros(1, ch, self.outH, self.outW), requires_grad=False).cuda()
+            output = Variable(torch.zeros(1, ch, self.local_val_out_height, self.local_val_out_width), requires_grad=False).cuda()
         else:
-            output = Variable(torch.zeros(1, ch, self.outH, self.outW), requires_grad=False)
+            output = Variable(torch.zeros(1, ch, self.local_val_out_height, self.local_val_out_width), requires_grad=False)
 
         for ori in range(6):
             grid = self.grid[ori, :, :, :].unsqueeze(0)  # 1, self.output_h, self.output_w, 2
@@ -152,10 +156,10 @@ class ClassCubemap2ERP:
 
             if self.CUDA:
                 sampled_image_masked = sampled_image * Variable(
-                    mask.float().view(1, 1, self.outH, self.outW).expand(1, ch, -1, -1)).cuda()
+                    mask.float().view(1, 1, self.local_val_out_height, self.local_val_out_width).expand(1, ch, -1, -1)).cuda()
             else:
                 sampled_image_masked = sampled_image * Variable(
-                    mask.float().view(1, 1, self.outH, self.outW).expand(1, ch, -1, -1))
+                    mask.float().view(1, 1, self.local_val_out_height, self.local_val_out_width).expand(1, ch, -1, -1))
             output = output + sampled_image_masked  # 1, ch, self.output_h, self.output_w
 
         return output
@@ -199,7 +203,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    cubemap2erp = ClassCubemap2ERP(cubeW=args.cubeW, outH=args.out_height, outW=args.out_height * 2, CUDA=args.use_cuda)
+    cubemap2erp = ClassCubemap2ERP(1, args.cubeW, args.out_height * 2, args.use_cuda)
 
     cube_cos = np.zeros((args.cubeW, args.cubeW), dtype=np.float32)
     D = (args.cubeW - 1) / 2
@@ -213,7 +217,7 @@ if __name__ == '__main__':
     # get cameras type
     cam = args.camera
 
-    
+    args.output_dir = os.path.join(args.output_dir, f'erp_{cam}')
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
@@ -223,31 +227,57 @@ if __name__ == '__main__':
         if 'depth' in args.camera:
             raw_data = np.load(os.path.join(args.cubemap_dir, f'cm_{cam}', f'cm_{cam}_{frame}.npz'), allow_pickle=True)
             cube = np.zeros([6, 1, args.cubeW, args.cubeW], dtype=np.float32)
-            cube[0, :, :, :] = np.transpose(raw_data['back_data'], (2, 0, 1))
-            cube[1, :, :, :] = np.transpose(raw_data['down_data'], (2, 0, 1))
-            cube[2, :, :, :] = np.transpose(raw_data['front_data'], (2, 0, 1))
-            cube[3, :, :, :] = np.transpose(raw_data['left_data'], (2, 0, 1))
-            cube[4, :, :, :] = np.transpose(raw_data['right_data'], (2, 0, 1))
-            cube[5, :, :, :] = np.transpose(raw_data['up_data'], (2, 0, 1))
-            for idx, view in [(0, 'back'), (1, 'down'), (2, 'front'), (3, 'left'), (4, 'right'), (5, 'up')]:
-                if args.format == 'npz':
-                    
-                    # print(raw)
-                    # raw = cv2.imread(glob.glob(f"{args.cubemap_dir}/{args.camera}_{view}_{frame}.png")[0],-1)
-                raw = raw.astype(np.float64)
-                raw = np.transpose(raw, (2, 0, 1))
-                normalized = (raw[0] + raw[1] * 256 + raw[2] * 256 * 256) / (256 * 256 * 256 - 1)
-                in_meters = 1000 * normalized
+            cube[0, :, :, :] += np.transpose(raw_data['back_data'], (2, 0, 1))[0]
+            cube[1, :, :, :] += np.transpose(raw_data['down_data'], (2, 0, 1))[0]
+            cube[2, :, :, :] += np.transpose(raw_data['front_data'], (2, 0, 1))[0]
+            cube[3, :, :, :] += np.transpose(raw_data['left_data'], (2, 0, 1))[0]
+            cube[4, :, :, :] += np.transpose(raw_data['right_data'], (2, 0, 1))[0]
+            cube[5, :, :, :] += np.transpose(raw_data['up_data'], (2, 0, 1))[0]
 
-                cube[idx][0] = in_meters / cube_cos
+            cube[0, :, :, :] += np.transpose(raw_data['back_data'], (2, 0, 1))[1] * 256
+            cube[1, :, :, :] += np.transpose(raw_data['down_data'], (2, 0, 1))[1] * 256
+            cube[2, :, :, :] += np.transpose(raw_data['front_data'], (2, 0, 1))[1] * 256
+            cube[3, :, :, :] += np.transpose(raw_data['left_data'], (2, 0, 1))[1] * 256
+            cube[4, :, :, :] += np.transpose(raw_data['right_data'], (2, 0, 1))[1] * 256
+            cube[5, :, :, :] += np.transpose(raw_data['up_data'], (2, 0, 1))[1] * 256
+
+            cube[0, :, :, :] += np.transpose(raw_data['back_data'], (2, 0, 1))[2] * 256 * 256
+            cube[1, :, :, :] += np.transpose(raw_data['down_data'], (2, 0, 1))[2] * 256 * 256
+            cube[2, :, :, :] += np.transpose(raw_data['front_data'], (2, 0, 1))[2] * 256 * 256
+            cube[3, :, :, :] += np.transpose(raw_data['left_data'], (2, 0, 1))[2] * 256 * 256
+            cube[4, :, :, :] += np.transpose(raw_data['right_data'], (2, 0, 1))[2] * 256 * 256
+            cube[5, :, :, :] += np.transpose(raw_data['up_data'], (2, 0, 1))[2] * 256 * 256
+
+            cube[0, :, :, :] /= (256 * 256 * 256 - 1)
+            cube[1, :, :, :] /= (256 * 256 * 256 - 1)
+            cube[2, :, :, :] /= (256 * 256 * 256 - 1)
+            cube[3, :, :, :] /= (256 * 256 * 256 - 1)
+            cube[4, :, :, :] /= (256 * 256 * 256 - 1)
+            cube[5, :, :, :] /= (256 * 256 * 256 - 1)
+
+            cube[0, :, :, :] *= 1000
+            cube[1, :, :, :] *= 1000
+            cube[2, :, :, :] *= 1000
+            cube[3, :, :, :] *= 1000
+            cube[4, :, :, :] *= 1000
+            cube[5, :, :, :] *= 1000
+
+            cube[0][0] /= cube_cos
+            cube[1][0] /= cube_cos
+            cube[2][0] /= cube_cos
+            cube[3][0] /= cube_cos
+            cube[4][0] /= cube_cos
+            cube[5][0] /= cube_cos 
 
             cube_tensor = torch.from_numpy(cube)
             out_batch = cubemap2erp.ToEquirecTensor(cube_tensor)
             out = out_batch.cpu().numpy()
             out = np.squeeze(out, axis=0)
             out = np.squeeze(out, axis=0)
+            print(out.max())
 
             vis_color = cv2.applyColorMap(cv2.convertScaleAbs(out, alpha=255 / 50), cv2.COLORMAP_JET)
+            cv2.imwrite(os.path.join(args.output_dir, f'erp_vis_{cam}_{frame}.jpg'), vis_color, [int(cv2.IMWRITE_JPEG_QUALITY), 97])
             np.save(os.path.join(args.output_dir, f'erp_{cam}_{frame}.npy'), out)
 
 
