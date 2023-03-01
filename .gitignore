@@ -6,3 +6,6 @@ tools/generate_traffic.py
 *.pyc
 video/
 scenes/
+/.idea/heterogenenous-data-carla.iml
+/.idea/inspectionProfiles/profiles_settings.xml
+/.idea/workspace.xml
