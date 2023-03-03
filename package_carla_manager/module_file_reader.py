@@ -37,11 +37,20 @@ def function_get_vehicle_json_list(parameter_file_path: str) -> list:
     :param parameter_file_path: path to scene_configs.json
     :return: list of vehicle dict.
     """
-
     with open(parameter_file_path) as f:
         local_val_vehicles = json.load(f)['vehicles']
     return local_val_vehicles
 
+def function_get_sepctator_json(parameter_file_path: str) -> dict:
+    """
+    This function get spectator config json from 'scene_config.json'.
+
+    :param parameter_file_path: path to scene_configs.json
+    :return: spectator config dict.
+    """
+    with open(parameter_file_path) as f:
+        local_val_spectator_config = json.load(f)['spectator']
+    return local_val_spectator_config
 
 def function_get_sensor_json_list(parameter_file_path: str) -> list:
     """
@@ -66,3 +75,4 @@ def function_get_save_json(parameter_file_path: str) -> dict:
     with open(parameter_file_path) as f:
         local_val_save_setting = json.load(f)['save_setting']
     return local_val_save_setting
+
