@@ -63,6 +63,7 @@ from __future__ import print_function
 
 
 import glob
+import json
 import os
 import sys
 
@@ -217,6 +218,8 @@ class World(object):
         self.restart()
         self.world.on_tick(hud.on_world_tick)
         self.recording_enabled = False
+        self.recording_save = False
+        self.replaying_enabled = False
         self.recording_start = 0
         self.constant_velocity_enabled = False
         self.show_vehicle_telemetry = False
@@ -377,6 +380,9 @@ class KeyboardControl(object):
         self._autopilot_enabled = start_in_autopilot
         self._ackermann_enabled = False
         self._ackermann_reverse = 1
+        self._controls_dic = None
+        self._replay_controls_dic = None
+        self._replay_count = 0
         if isinstance(world.player, carla.Vehicle):
             self._control = carla.VehicleControl()
             self._ackermann_control = carla.VehicleAckermannControl()
@@ -395,6 +401,7 @@ class KeyboardControl(object):
     def parse_events(self, client, world, clock, sync_mode):
         if isinstance(self._control, carla.VehicleControl):
             current_lights = self._lights
+        world.recording_save = False
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return True
@@ -481,33 +488,61 @@ class KeyboardControl(object):
                     world.camera_manager.toggle_recording()
                 elif event.key == K_r and (pygame.key.get_mods() & KMOD_CTRL):
                     if (world.recording_enabled):
-                        client.stop_recorder()
-                        if os.path.exists("./recording_temp.log"):
-                            os.remove("./recording.log")
-                            os.rename("./recording_temp.log", "./recording.log")
-                        world.recording_enabled = False
-                        world.hud.notification("Recorder is OFF")
-                    else:
-                        if os.path.exists("./recording.log"):
-                            client.start_recorder("./recording_temp.log")
+                        # client.stop_recorder()
+                        # if os.path.exists(os.path.join(os.path.curdir, "recording_temp.log")):
+                        #     os.remove(os.path.join(os.path.curdir, "recording.log"))
+                        #     os.rename(os.path.join(os.path.curdir, "recording_temp.log"), os.path.join(os.path.curdir, "recording.log"))
+                        if isinstance(self._control, carla.VehicleControl):
+                            world.recording_enabled = False
+                            world.recording_save = True
+                            world.hud.notification("Recorder is OFF")
                         else:
-                            client.start_recorder("./recording.log")
-                        world.recording_enabled = True
-                        world.hud.notification("Recorder is ON")
+                            world.recording_enabled = False
+                            world.hud.notification("Not control a vehicle")
+                    else:
+                        # if os.path.exists(os.path.join(os.path.curdir, "recording.log")):
+                        #     client.start_recorder(os.path.join(os.path.curdir, "recording_temp.log"))
+                        # else:
+                        #     client.start_recorder(os.path.join(os.path.curdir, "recording.log"))
+                        if isinstance(self._control, carla.VehicleControl):
+                            if os.path.exists('control_test.json'):
+                                with open('control_test.json', 'r+', encoding='utf-8') as p:
+                                    self._controls_dic = json.load(p)
+                            world.recording_enabled = True
+                            world.hud.notification("Recorder is ON")
+                        else:
+                            world.recording_enabled = False
+                            world.hud.notification("Not control a vehicle")
                 elif event.key == K_p and (pygame.key.get_mods() & KMOD_CTRL):
-                    # stop recorder
-                    client.stop_recorder()
-                    world.recording_enabled = False
-                    # work around to fix camera at start of replaying
-                    current_index = world.camera_manager.index
-                    world.destroy_sensors()
-                    # disable autopilot
-                    self._autopilot_enabled = False
-                    world.player.set_autopilot(self._autopilot_enabled)
-                    world.hud.notification("Replaying file 'recording.log'")
-                    # replayer
-                    client.replay_file("./recording.log", world.recording_start, 0, 0)
-                    world.camera_manager.set_sensor(current_index)
+                    # # stop recorder
+                    # client.stop_recorder()
+                    # world.recording_enabled = False
+                    # # work around to fix camera at start of replaying
+                    # current_index = world.camera_manager.index
+                    # world.destroy_sensors()
+                    # # disable autopilot
+                    # self._autopilot_enabled = False
+                    # world.player.set_autopilot(self._autopilot_enabled)
+                    # world.hud.notification("Replaying file 'recording.log'")
+                    # # replayer
+                    # client.replay_file("recording.log", world.recording_start, 0, 0)
+                    # world.camera_manager.set_sensor(current_index)
+                    if world.recording_enabled:
+                        world.recording_enabled = False
+                        world.hud.notification('stop recording, please redo')
+                    else:
+                        if world.replaying_enabled:
+                            world.replaying_enabled = False
+                            world.hud.notification('stop replaying')
+                        else:
+                            if os.path.exists('control_test.json'):
+                                with open('control_test.json', 'r+', encoding='utf-8') as p:
+                                    self._replay_controls_dic = json.load(p)
+                                world.replaying_enabled = True
+                                world.hud.notification('start replaying')
+                            else:
+                                world.hud.notification('there is no control_test.json')
+
                 elif event.key == K_MINUS and (pygame.key.get_mods() & KMOD_CTRL):
                     if pygame.key.get_mods() & KMOD_SHIFT:
                         world.recording_start -= 10
@@ -578,7 +613,6 @@ class KeyboardControl(object):
                         current_lights ^= carla.VehicleLightState.LeftBlinker
                     elif event.key == K_x:
                         current_lights ^= carla.VehicleLightState.RightBlinker
-
         if not self._autopilot_enabled:
             if isinstance(self._control, carla.VehicleControl):
                 self._parse_vehicle_keys(pygame.key.get_pressed(), clock.get_time())
@@ -608,6 +642,62 @@ class KeyboardControl(object):
             elif isinstance(self._control, carla.WalkerControl):
                 self._parse_walker_keys(pygame.key.get_pressed(), clock.get_time(), world)
                 world.player.apply_control(self._control)
+
+        if world.recording_enabled:
+            control_list = [self._control.throttle, self._control.steer, self._control.brake, self._control.hand_brake,
+                            self._control.reverse, self._control.manual_gear_shift,
+                            self._control.gear]
+            if self._controls_dic is None:
+                transform = world.player.get_transform()
+                self._controls_dic = {world.player.id: [
+                    [transform.location.x, transform.location.y, transform.location.z, transform.rotation.pitch,
+                     transform.rotation.yaw, transform.rotation.roll], control_list]}
+            elif world.player.id not in self._controls_dic:
+                transform = world.player.get_transform()
+                self._controls_dic.update({world.player.id: [
+                    [transform.location.x, transform.location.y, transform.location.z, transform.rotation.pitch,
+                     transform.rotation.yaw, transform.rotation.roll], control_list]})
+            else:
+                self._controls_dic[world.player.id].append(control_list)
+        elif world.recording_save:
+            with open('control_test.json', 'w+', encoding='utf-8') as p:
+                json.dump(self._controls_dic, p)
+
+        if world.replaying_enabled:
+            if self._replay_count == 0:
+                for key in self._replay_controls_dic:
+                    actor = world.world.get_actor(int(key))
+                    actor.set_transform(carla.Transform(
+                        carla.Location(self._replay_controls_dic[key][0][0], self._replay_controls_dic[key][0][1],
+                                       self._replay_controls_dic[key][0][2]),
+                        carla.Rotation(self._replay_controls_dic[key][0][3], self._replay_controls_dic[key][0][4],
+                                       self._replay_controls_dic[key][0][5])))
+                self._replay_count += 1
+            else:
+                for key in self._replay_controls_dic:
+                    if len(self._replay_controls_dic[key]) > self._replay_count:
+                        actor = world.world.get_actor(int(key))
+                        local_current_ctrl = actor.get_control()
+                        local_current_ctrl.throttle = float(
+                            self._replay_controls_dic[key][self._replay_count][0])
+                        local_current_ctrl.steer = float(
+                            self._replay_controls_dic[key][self._replay_count][1])
+                        local_current_ctrl.brake = float(
+                            self._replay_controls_dic[key][self._replay_count][2])
+                        local_current_ctrl.hand_brake = bool(
+                            self._replay_controls_dic[key][self._replay_count][3])
+                        local_current_ctrl.reverse = bool(
+                            self._replay_controls_dic[key][self._replay_count][4])
+                        local_current_ctrl.manual_gear_shift = bool(
+                            self._replay_controls_dic[key][self._replay_count][5])
+                        local_current_ctrl.gear = int(
+                            self._replay_controls_dic[key][self._replay_count][6])
+                        actor.apply_control(local_current_ctrl)
+                self._replay_count += 1
+        else:
+            self._replay_count = 0
+
+
 
     def _parse_vehicle_keys(self, keys, milliseconds):
         if keys[K_UP] or keys[K_w]:
