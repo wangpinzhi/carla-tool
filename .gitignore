@@ -1,8 +1,8 @@
-old_version/
-output/*
+output
 cube_help.npy
 tools/generate_traffic.py
 *.zip
-*.pyc
 video/
 scenes/
+*.avi
+__pycache__

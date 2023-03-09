@@ -199,7 +199,9 @@ if __name__ == '__main__':
     parser.add_argument('--output_dir', type=str, default=r'output\huawei_demo_parking\post_data')
     parser.add_argument('--cubeW', type=int, default=2560)
     parser.add_argument('--out_height', type=int, default=2560)
+    parser.add_argument('--frames', type=int, default=200)
     parser.add_argument('--use_cuda', action='store_true', default=False, help='use gpu to post data')
+
 
     args = parser.parse_args()
 
@@ -212,16 +214,16 @@ if __name__ == '__main__':
             cube_cos[i][j] = math.sqrt(D * D / ((i - D) * (i - D) + (j - D) * (j - D) + D * D))
 
     # get frames
-    frames = [i for i in range(0,200)]
+    frames = [i for i in range(args.frames)]
 
     # get cameras type
     cam = args.camera
 
-    args.output_vis_dir = os.path.join(args.output_dir, f'erp_vis_{cam}')
+    args.output_vis_dir = os.path.join(args.output_dir, f'erp_vis')
     if not os.path.exists(args.output_vis_dir):
         os.makedirs(args.output_vis_dir)
 
-    args.output_dir = os.path.join(args.output_dir, f'erp_{cam}')
+    args.output_dir = os.path.join(args.output_dir, f'erp')
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
     
