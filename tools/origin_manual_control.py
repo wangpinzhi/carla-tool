@@ -381,7 +381,9 @@ class KeyboardControl(object):
         self._ackermann_enabled = False
         self._ackermann_reverse = 1
         self._controls_dic = None
+        self._controls_np = None
         self._replay_controls_dic = None
+        self._replay_controls_np = None
         self._replay_count = 0
         if isinstance(world.player, carla.Vehicle):
             self._control = carla.VehicleControl()
@@ -488,10 +490,6 @@ class KeyboardControl(object):
                     world.camera_manager.toggle_recording()
                 elif event.key == K_r and (pygame.key.get_mods() & KMOD_CTRL):
                     if (world.recording_enabled):
-                        # client.stop_recorder()
-                        # if os.path.exists(os.path.join(os.path.curdir, "recording_temp.log")):
-                        #     os.remove(os.path.join(os.path.curdir, "recording.log"))
-                        #     os.rename(os.path.join(os.path.curdir, "recording_temp.log"), os.path.join(os.path.curdir, "recording.log"))
                         if isinstance(self._control, carla.VehicleControl):
                             world.recording_enabled = False
                             world.recording_save = True
@@ -500,33 +498,18 @@ class KeyboardControl(object):
                             world.recording_enabled = False
                             world.hud.notification("Not control a vehicle")
                     else:
-                        # if os.path.exists(os.path.join(os.path.curdir, "recording.log")):
-                        #     client.start_recorder(os.path.join(os.path.curdir, "recording_temp.log"))
-                        # else:
-                        #     client.start_recorder(os.path.join(os.path.curdir, "recording.log"))
                         if isinstance(self._control, carla.VehicleControl):
                             if os.path.exists('control_test.json'):
                                 with open('control_test.json', 'r+', encoding='utf-8') as p:
                                     self._controls_dic = json.load(p)
+                                if os.path.exists(f'control_test_id_{world.player.id}.npy'):
+                                    self._controls_np = np.load(f'control_test_id_{world.player.id}.npy')
                             world.recording_enabled = True
                             world.hud.notification("Recorder is ON")
                         else:
                             world.recording_enabled = False
                             world.hud.notification("Not control a vehicle")
                 elif event.key == K_p and (pygame.key.get_mods() & KMOD_CTRL):
-                    # # stop recorder
-                    # client.stop_recorder()
-                    # world.recording_enabled = False
-                    # # work around to fix camera at start of replaying
-                    # current_index = world.camera_manager.index
-                    # world.destroy_sensors()
-                    # # disable autopilot
-                    # self._autopilot_enabled = False
-                    # world.player.set_autopilot(self._autopilot_enabled)
-                    # world.hud.notification("Replaying file 'recording.log'")
-                    # # replayer
-                    # client.replay_file("recording.log", world.recording_start, 0, 0)
-                    # world.camera_manager.set_sensor(current_index)
                     if world.recording_enabled:
                         world.recording_enabled = False
                         world.hud.notification('stop recording, please redo')
@@ -538,6 +521,13 @@ class KeyboardControl(object):
                             if os.path.exists('control_test.json'):
                                 with open('control_test.json', 'r+', encoding='utf-8') as p:
                                     self._replay_controls_dic = json.load(p)
+                                if self._replay_controls_np is None:
+                                    self._replay_controls_np = {}
+                                else:
+                                    self._replay_controls_np.clear()
+                                for key in self._replay_controls_dic:
+                                    controls_np = np.load(f'control_test_id_{key}.npy')
+                                    self._replay_controls_np.update({key: controls_np})
                                 world.replaying_enabled = True
                                 world.hud.notification('start replaying')
                             else:
@@ -644,54 +634,68 @@ class KeyboardControl(object):
                 world.player.apply_control(self._control)
 
         if world.recording_enabled:
-            control_list = [self._control.throttle, self._control.steer, self._control.brake, self._control.hand_brake,
-                            self._control.reverse, self._control.manual_gear_shift,
-                            self._control.gear]
+            control_np = np.array([self._control.throttle, self._control.steer, self._control.brake,
+                                  self._control.hand_brake, self._control.reverse, self._control.manual_gear_shift,
+                                  self._control.gear])
             if self._controls_dic is None:
                 transform = world.player.get_transform()
-                self._controls_dic = {world.player.id: [
-                    [transform.location.x, transform.location.y, transform.location.z, transform.rotation.pitch,
-                     transform.rotation.yaw, transform.rotation.roll], control_list]}
+                self._controls_dic = {
+                    world.player.id: [transform.location.x, transform.location.y, transform.location.z,
+                                      transform.rotation.pitch, transform.rotation.yaw, transform.rotation.roll]}
+                self._controls_np = control_np
             elif world.player.id not in self._controls_dic:
                 transform = world.player.get_transform()
-                self._controls_dic.update({world.player.id: [
-                    [transform.location.x, transform.location.y, transform.location.z, transform.rotation.pitch,
-                     transform.rotation.yaw, transform.rotation.roll], control_list]})
+                self._controls_dic.update({
+                    world.player.id: [transform.location.x, transform.location.y, transform.location.z,
+                                      transform.rotation.pitch, transform.rotation.yaw, transform.rotation.roll]})
+                self._controls_np = control_np
             else:
-                self._controls_dic[world.player.id].append(control_list)
+                self._controls_np = np.vstack([self._controls_np, control_np])
         elif world.recording_save:
             with open('control_test.json', 'w+', encoding='utf-8') as p:
                 json.dump(self._controls_dic, p)
+            np.save(f'control_test_id_{world.player.id}.npy', self._controls_np)
 
         if world.replaying_enabled:
             if self._replay_count == 0:
                 for key in self._replay_controls_dic:
                     actor = world.world.get_actor(int(key))
                     actor.set_transform(carla.Transform(
-                        carla.Location(self._replay_controls_dic[key][0][0], self._replay_controls_dic[key][0][1],
-                                       self._replay_controls_dic[key][0][2]),
-                        carla.Rotation(self._replay_controls_dic[key][0][3], self._replay_controls_dic[key][0][4],
-                                       self._replay_controls_dic[key][0][5])))
+                        carla.Location(self._replay_controls_dic[key][0], self._replay_controls_dic[key][1],
+                                       self._replay_controls_dic[key][2]),
+                        carla.Rotation(self._replay_controls_dic[key][3], self._replay_controls_dic[key][4],
+                                       self._replay_controls_dic[key][5])))
                 self._replay_count += 1
             else:
-                for key in self._replay_controls_dic:
-                    if len(self._replay_controls_dic[key]) > self._replay_count:
+                for key in self._replay_controls_np:
+                    if len(self._replay_controls_np[key]) >= self._replay_count:
                         actor = world.world.get_actor(int(key))
                         local_current_ctrl = actor.get_control()
                         local_current_ctrl.throttle = float(
-                            self._replay_controls_dic[key][self._replay_count][0])
+                            self._replay_controls_np[key][self._replay_count - 1][0])
                         local_current_ctrl.steer = float(
-                            self._replay_controls_dic[key][self._replay_count][1])
+                            self._replay_controls_np[key][self._replay_count - 1][1])
                         local_current_ctrl.brake = float(
-                            self._replay_controls_dic[key][self._replay_count][2])
+                            self._replay_controls_np[key][self._replay_count - 1][2])
                         local_current_ctrl.hand_brake = bool(
-                            self._replay_controls_dic[key][self._replay_count][3])
+                            self._replay_controls_np[key][self._replay_count - 1][3])
                         local_current_ctrl.reverse = bool(
-                            self._replay_controls_dic[key][self._replay_count][4])
+                            self._replay_controls_np[key][self._replay_count - 1][4])
                         local_current_ctrl.manual_gear_shift = bool(
-                            self._replay_controls_dic[key][self._replay_count][5])
+                            self._replay_controls_np[key][self._replay_count - 1][5])
                         local_current_ctrl.gear = int(
-                            self._replay_controls_dic[key][self._replay_count][6])
+                            self._replay_controls_np[key][self._replay_count - 1][6])
+                        actor.apply_control(local_current_ctrl)
+                    elif len(self._replay_controls_np[key]) == self._replay_count - 1:
+                        actor = world.world.get_actor(int(key))
+                        local_current_ctrl = actor.get_control()
+                        local_current_ctrl.throttle = float(0)
+                        local_current_ctrl.steer = float(0)
+                        local_current_ctrl.brake = float(0)
+                        local_current_ctrl.hand_brake = bool(False)
+                        local_current_ctrl.reverse = bool(False)
+                        local_current_ctrl.manual_gear_shift = bool(False)
+                        local_current_ctrl.gear = int(0)
                         actor.apply_control(local_current_ctrl)
                 self._replay_count += 1
         else:
