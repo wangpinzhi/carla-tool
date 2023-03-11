@@ -4,5 +4,3 @@ tools/generate_traffic.py
 *.zip
 video/
 scenes/
-*.avi
-__pycache__
