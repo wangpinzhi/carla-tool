@@ -199,7 +199,9 @@ if __name__ == '__main__':
     parser.add_argument('--output_dir', type=str, default=r'output\huawei_demo_parking\post_data')
     parser.add_argument('--cubeW', type=int, default=2560)
     parser.add_argument('--out_height', type=int, default=2560)
+    parser.add_argument('--frames', type=int, default=200)
     parser.add_argument('--use_cuda', action='store_true', default=False, help='use gpu to post data')
+
 
     args = parser.parse_args()
 
@@ -212,71 +214,43 @@ if __name__ == '__main__':
             cube_cos[i][j] = math.sqrt(D * D / ((i - D) * (i - D) + (j - D) * (j - D) + D * D))
 
     # get frames
-    frames = [i for i in range(0,200)]
+    frames = [i for i in range(args.frames)]
 
     # get cameras type
     cam = args.camera
 
-    args.output_dir = os.path.join(args.output_dir, f'erp_{cam}')
+    args.output_vis_dir = os.path.join(args.output_dir, f'erp_vis')
+    if not os.path.exists(args.output_vis_dir):
+        os.makedirs(args.output_vis_dir)
+
+    args.output_dir = os.path.join(args.output_dir, f'erp')
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
-
+    
     for frame in tqdm(frames, desc='Cubemap2ERP Processing ', unit='frames'):
         # back down front left right up
         # step 1 readcube
         if 'depth' in args.camera:
             raw_data = np.load(os.path.join(args.cubemap_dir, f'cm_{cam}', f'cm_{cam}_{frame}.npz'), allow_pickle=True)
             cube = np.zeros([6, 1, args.cubeW, args.cubeW], dtype=np.float32)
-            cube[0, :, :, :] += np.transpose(raw_data['back_data'], (2, 0, 1))[2]
-            cube[1, :, :, :] += np.transpose(raw_data['down_data'], (2, 0, 1))[2]
-            cube[2, :, :, :] += np.transpose(raw_data['front_data'], (2, 0, 1))[2]
-            cube[3, :, :, :] += np.transpose(raw_data['left_data'], (2, 0, 1))[2]
-            cube[4, :, :, :] += np.transpose(raw_data['right_data'], (2, 0, 1))[2]
-            cube[5, :, :, :] += np.transpose(raw_data['up_data'], (2, 0, 1))[2]
 
-            cube[0, :, :, :] += np.transpose(raw_data['back_data'], (2, 0, 1))[1] * 256
-            cube[1, :, :, :] += np.transpose(raw_data['down_data'], (2, 0, 1))[1] * 256
-            cube[2, :, :, :] += np.transpose(raw_data['front_data'], (2, 0, 1))[1] * 256
-            cube[3, :, :, :] += np.transpose(raw_data['left_data'], (2, 0, 1))[1] * 256
-            cube[4, :, :, :] += np.transpose(raw_data['right_data'], (2, 0, 1))[1] * 256
-            cube[5, :, :, :] += np.transpose(raw_data['up_data'], (2, 0, 1))[1] * 256
-
-            cube[0, :, :, :] += np.transpose(raw_data['back_data'], (2, 0, 1))[0] * 256 * 256
-            cube[1, :, :, :] += np.transpose(raw_data['down_data'], (2, 0, 1))[0] * 256 * 256
-            cube[2, :, :, :] += np.transpose(raw_data['front_data'], (2, 0, 1))[0] * 256 * 256
-            cube[3, :, :, :] += np.transpose(raw_data['left_data'], (2, 0, 1))[0] * 256 * 256
-            cube[4, :, :, :] += np.transpose(raw_data['right_data'], (2, 0, 1))[0] * 256 * 256
-            cube[5, :, :, :] += np.transpose(raw_data['up_data'], (2, 0, 1))[0] * 256 * 256
-
-            cube[0, :, :, :] /= (256 * 256 * 256 - 1)
-            cube[1, :, :, :] /= (256 * 256 * 256 - 1)
-            cube[2, :, :, :] /= (256 * 256 * 256 - 1)
-            cube[3, :, :, :] /= (256 * 256 * 256 - 1)
-            cube[4, :, :, :] /= (256 * 256 * 256 - 1)
-            cube[5, :, :, :] /= (256 * 256 * 256 - 1)
-
-            cube[0, :, :, :] *= 1000
-            cube[1, :, :, :] *= 1000
-            cube[2, :, :, :] *= 1000
-            cube[3, :, :, :] *= 1000
-            cube[4, :, :, :] *= 1000
-            cube[5, :, :, :] *= 1000
-
-            cube[0][0] /= cube_cos
-            cube[1][0] /= cube_cos
-            cube[2][0] /= cube_cos
-            cube[3][0] /= cube_cos
-            cube[4][0] /= cube_cos
-            cube[5][0] /= cube_cos 
+            for idx, key in enumerate(['back_data', 'down_data', 'front_data', 'left_data', 'right_data', 'up_data']):
+                raw = np.transpose(raw_data[key], (2, 0, 1))
+                raw = raw.astype(np.float32)
+                normalized = (raw[2] + raw[1] * 256 + raw[0] * 256 * 256) / (256 * 256 * 256 - 1)
+                in_meters = 1000 * normalized
+                cube[idx][0] = in_meters / cube_cos
 
             cube_tensor = torch.from_numpy(cube)
             out_batch = cubemap2erp.ToEquirecTensor(cube_tensor)
             out = out_batch.cpu().numpy()
             out = np.squeeze(out, axis=0)
             out = np.squeeze(out, axis=0)
-
-            vis_color = cv2.applyColorMap(cv2.convertScaleAbs(out, alpha=255 / 50), cv2.COLORMAP_JET)
-            cv2.imwrite(os.path.join(args.output_dir, f'erp_vis_{cam}_{frame}.jpg'), vis_color, [int(cv2.IMWRITE_JPEG_QUALITY), 97])
+            vis_color = cv2.applyColorMap(cv2.convertScaleAbs(out, alpha=255/50), cv2.COLORMAP_JET)
+            # im=Image.fromarray(vis_color)
+                
+            # im.save(os.path.join(args.output_vis_dir, f'erp_vis_{cam}_{frame}.jpg'))
+            cv2.imwrite(os.path.join(args.output_vis_dir, f'erp_vis_{cam}_{frame}.jpg'), vis_color, [int(cv2.IMWRITE_JPEG_QUALITY), 97])
             np.save(os.path.join(args.output_dir, f'erp_{cam}_{frame}.npy'), out)
 
 

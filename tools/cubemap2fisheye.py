@@ -17,7 +17,6 @@ class Cubemap2Fisheye:
     def __init__(self, fish_h, fish_w, fish_FoV, Rot=np.identity(3, dtype=np.float32), use_cuda=False):
 
         if use_cuda:
-            print('Use GPU')
             self.device = torch.device('cuda')
         else:
             self.device = torch.device('cpu')
@@ -160,6 +159,7 @@ if __name__ == '__main__':
     parser.add_argument('--outW', type=int, default=2560)
     parser.add_argument('--output_dir', type=str, default=r'output\huawei_demo_parking\post_data')
     parser.add_argument('--use_cuda', action='store_true', default=True, help='use gpu to post data')
+    parser.add_argument('--frames', type=int, default=200)
     parser.add_argument('--r_x', type=float, default=0.0,
                         help='the angle of rotation_axis x (°)')
     parser.add_argument('--r_y', type=float, default=0.0,
@@ -171,7 +171,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     cam = args.camera
 
-    args.output_dir = os.path.join(args.output_dir, f'fe_{cam}')
+    args.output_dir = os.path.join(args.output_dir, f'fisheye190')
 
     c2f = Cubemap2Fisheye(args.outW, args.outW, args.fov, Rot=R.from_euler('zyx', [
         args.r_z, args.r_y, args.r_x], degrees=True).as_matrix(), use_cuda=args.use_cuda)
@@ -181,7 +181,7 @@ if __name__ == '__main__':
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
-    frames = [i for i in range(0, 200)]
+    frames = [i for i in range(args.frames)]
     pbar = tqdm(frames, desc=f'c2f {args.camera}', unit='frames')
 
     for frame in pbar:

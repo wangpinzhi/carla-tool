@@ -7,7 +7,7 @@ from tqdm import tqdm
 # read configs from json file.
 from .module_file_reader import function_get_map_json, function_get_weather_json
 from .module_file_reader import function_get_vehicle_json_list, function_get_sensor_json_list
-from .module_file_reader import function_get_save_json
+from .module_file_reader import function_get_save_json, function_get_sepctator_json
 
 # according to the json file, set the world.
 from .module_map_control import function_set_map
@@ -18,6 +18,9 @@ from .module_vehicle_manager import instance_var_vehicle_manager as global_var_v
 
 # import global sensor manager to control sensors
 from .module_sensor_manager import instance_var_sensor_manager as global_val_sensor_manager
+
+#
+from .module_spectator_manager import instance_var_spectator_manager as global_val_spectator_manager
 
 
 class ClassSimulatorManager(object):
@@ -46,6 +49,8 @@ class ClassSimulatorManager(object):
         self.local_val_client.set_timeout(20.0)  # 20s timeout
         self.local_val_scene_config_path = parameter_path_scene
         self.local_val_sensor_config_path = parameter_path_sensor
+        global_val_spectator_manager.function_register_spectator(self.local_val_client.get_world())
+
         print('\033[1;32m[Scene Config Path]:\033[0m', '    ',
               f'\033[1;33m{self.local_val_scene_config_path}\033[0m')
         print('\033[1;32m[Sensor Config Path]:\033[0m', '    ',
@@ -63,18 +68,22 @@ class ClassSimulatorManager(object):
         self.local_val_client.set_timeout(60.0)  # 20s timeout
 
         # set map
-        local_val_map = function_get_map_json(self.local_val_scene_config_path)
-        function_set_map(self.local_val_client, local_val_map)
+        local_val_map_config = function_get_map_json(self.local_val_scene_config_path)
+        function_set_map(self.local_val_client, local_val_map_config)
 
         # set weather
-        local_val_weather = function_get_weather_json(self.local_val_scene_config_path)
-        function_set_weather(self.local_val_client.get_world(), local_val_weather)
+        local_val_weather_config = function_get_weather_json(self.local_val_scene_config_path)
+        function_set_weather(self.local_val_client.get_world(), local_val_weather_config)
+
+        # set spectator
+        local_val_spectator_config = function_get_sepctator_json(self.local_val_scene_config_path)
+        global_val_spectator_manager.function_init_spectator(local_val_spectator_config)
+
 
     def _function_sim_one_step(self,
                                parameter_sensor_config):
         local_val_counter = 0
         try:
-            
             # get save setting
             local_val_save_config = function_get_save_json(self.local_val_sensor_config_path)
             local_val_frame_start = local_val_save_config['frame_start']
@@ -101,7 +110,7 @@ class ClassSimulatorManager(object):
             self.local_val_client.get_world().apply_settings(self.local_val_world_settings)
 
             global_var_vehicle_manager.function_init_vehicles(self.local_val_client)  # init vehicles state
-            
+
             # skip frames that do not need saving
             print('\033[1;35m Sikpping Unused Frames\033[0m')
             while local_val_counter < local_val_frame_start:
@@ -145,12 +154,15 @@ class ClassSimulatorManager(object):
                                    parameter_split_num: int = 3):
         
         local_val_sensor_configs = function_get_sensor_json_list(self.local_val_sensor_config_path)
+        
         print('\033[1;32m[Total Sensors Num]:\033[0m', '    ',
               f'\033[1;33m{len(local_val_sensor_configs)}\033[0m')
         print('\033[1;32m[Split Sensors Num]:\033[0m', '    ',
               f'\033[1;33m{parameter_split_num}\033[0m')
+        
         local_val_item_nums = int(len(local_val_sensor_configs) / parameter_split_num) + 1
-        print('\033[1;35m------------------------------------------------------------------------------------------------\033[0m')
+
+        print('\033[1;35m------------------------------------COLLECT START------------------------------------------------\033[0m')
         for i in range(parameter_split_num):
             local_val_part = local_val_sensor_configs[
                              i * local_val_item_nums:i * local_val_item_nums + local_val_item_nums]
@@ -161,6 +173,7 @@ class ClassSimulatorManager(object):
                 self._function_sim_one_step(local_val_part)
                 gc.collect()
                 time.sleep(5.0)
+        print('\033[1;35m------------------------------------COLLECT END-------------------------------------------------\033[0m')
 
 
 

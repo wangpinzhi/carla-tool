@@ -10,11 +10,16 @@ import func_timeout
 
 # import global vehicle manager to find vehicle
 from .module_vehicle_manager import instance_var_vehicle_manager as global_var_vehicle_manager
+from .module_spectator_manager import instance_var_spectator_manager as global_var_spectator_manager
 
 __all__ = ['instance_var_sensor_manager']
 
 GLOBAL_CONSTANT_SENSOR_TYPE_CUBE = 0
 GLOBAL_CONSTANT_SENSOR_TYPE_NORMAL = 1
+
+GLOBAL_CONSTANT_ATTACH_TYPE_SPECTATOR = 0
+GLOBAL_CONSTANT_ATTACH_TYPE_VEHICLE = 1
+GLOBAL_CONSTANT_ATTACH_TYPE_WALKER = 2 
 
 class ClassSensorUnit(Thread):
     def __init__(self,
@@ -282,8 +287,11 @@ class ClassSensorManager(object):
             local_val_blueprint.set_attribute('sensor_tick', '0.0')
 
         # attach actor
-        local_val_attach = global_var_vehicle_manager.function_get_vehicle_by_role_name(
-            parameter_sensor_config['attach'])
+        if parameter_sensor_config['attach_type'] == GLOBAL_CONSTANT_ATTACH_TYPE_VEHICLE:
+            local_val_attach = global_var_vehicle_manager.function_get_vehicle_by_role_name(
+                parameter_sensor_config['attach_name'])
+        elif parameter_sensor_config['attach_type'] == GLOBAL_CONSTANT_ATTACH_TYPE_SPECTATOR:
+            local_val_attach = global_var_spectator_manager.function_get_spectator()
 
         # attach spawn point transform
         local_val_spawn_point = carla.Transform()
@@ -358,7 +366,7 @@ class ClassSensorManager(object):
         for sensor in self.__local_val_sensors:
             sensor.function_stop()
 
-    @func_set_timeout(3.0)
+    @func_set_timeout(10.0)
     def function_sync_sensors(self) -> bool:
         for sensor in self.__local_val_sensors:
             try:

@@ -223,6 +223,7 @@ if __name__ == '__main__':
     parser.add_argument('--cubeW', type=int, default=2560)
     parser.add_argument('--outH', type=int, default=1080)
     parser.add_argument('--outW', type=int, default=1920)
+    parser.add_argument('--frames', type=int, default=200)
     parser.add_argument('--format', type=str, default='jpg')
     parser.add_argument('--cubemap_dir', type=str, default=r'output\huawei_demo_parking\raw_data')
     parser.add_argument('--camera', type=str)
@@ -232,11 +233,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     #  get frames
-    frames = [i for i in range(0, 200)]
+    frames = [i for i in range(args.frames)]
 
     # get cameras type
     cam = args.camera
-    args.output_dir = os.path.join(args.output_dir, f'ph_{cam}')
+    args.output_dir = os.path.join(args.output_dir, f'pinhole')
 
     # step2 trans cubemap to erp
     cube = np.zeros([6, 3, args.cubeW, args.cubeW], dtype=np.float32)
