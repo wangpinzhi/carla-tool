@@ -15,6 +15,7 @@ python tools/cubemap2fisheye.py     --fov 190^
                                     --frames %FRAMES%^
                                     --r_x 30^
                                     --output_dir "%ROOT_DIR%/post_data"^
+                                    --frames 200^
                                     --use_cuda
 
 python tools/cubemap2fisheye.py     --fov 190^

@@ -281,8 +281,9 @@ class World(object):
                 print('There are no spawn points available in your map/town.')
                 print('Please add some Vehicle Spawn Point to your UE4 scene.')
                 sys.exit(1)
-            spawn_points = self.map.get_spawn_points()
-            spawn_point = random.choice(spawn_points) if spawn_points else carla.Transform()
+            # spawn_points = self.map.get_spawn_points()
+            # spawn_point = random.choice(spawn_points) if spawn_points else carla.Transform()
+            spawn_point = carla.Transform(carla.Location(-60.2,179.80,0.5), carla.Rotation(0,0,0))
             self.player = self.world.try_spawn_actor(blueprint, spawn_point)
             self.show_vehicle_telemetry = False
             self.modify_vehicle_physics(self.player)
@@ -454,7 +455,7 @@ class KeyboardControl(object):
                         world.constant_velocity_enabled = False
                         world.hud.notification("Disabled Constant Velocity Mode")
                     else:
-                        world.player.enable_constant_velocity(carla.Vector3D(17, 0, 0))
+                        world.player.enable_constant_velocity(carla.Vector3D(-0.3, 0, 0))
                         world.constant_velocity_enabled = True
                         world.hud.notification("Enabled Constant Velocity Mode at 60 km/h")
                 elif event.key == K_o:
@@ -619,8 +620,31 @@ class KeyboardControl(object):
                 if current_lights != self._lights: # Change the light state only if necessary
                     self._lights = current_lights
                     world.player.set_light_state(carla.VehicleLightState(self._lights))
+                
                 # Apply control
                 if not self._ackermann_enabled:
+                    if world.recording_enabled:
+                        control_np = np.array([self._control.throttle, self._control.steer, self._control.brake,
+                                            self._control.hand_brake, self._control.reverse, self._control.manual_gear_shift,
+                                            self._control.gear])
+                        if self._controls_dic is None:
+                            transform = world.player.get_transform()
+                            self._controls_dic = {
+                                world.player.id: [transform.location.x, transform.location.y, transform.location.z,
+                                                transform.rotation.pitch, transform.rotation.yaw, transform.rotation.roll]}
+                            self._controls_np = control_np
+                        elif world.player.id not in self._controls_dic:
+                            transform = world.player.get_transform()
+                            self._controls_dic.update({
+                                world.player.id: [transform.location.x, transform.location.y, transform.location.z,
+                                                transform.rotation.pitch, transform.rotation.yaw, transform.rotation.roll]})
+                            self._controls_np = control_np
+                        else:
+                            self._controls_np = np.vstack([self._controls_np, control_np])
+                    elif world.recording_save:
+                        with open('control_test.json', 'w+', encoding='utf-8') as p:
+                            json.dump(self._controls_dic, p)
+                        np.save(f'control_test_id_{world.player.id}.npy', self._controls_np)
                     world.player.apply_control(self._control)
                 else:
                     world.player.apply_ackermann_control(self._ackermann_control)
@@ -633,29 +657,7 @@ class KeyboardControl(object):
                 self._parse_walker_keys(pygame.key.get_pressed(), clock.get_time(), world)
                 world.player.apply_control(self._control)
 
-        if world.recording_enabled:
-            control_np = np.array([self._control.throttle, self._control.steer, self._control.brake,
-                                  self._control.hand_brake, self._control.reverse, self._control.manual_gear_shift,
-                                  self._control.gear])
-            if self._controls_dic is None:
-                transform = world.player.get_transform()
-                self._controls_dic = {
-                    world.player.id: [transform.location.x, transform.location.y, transform.location.z,
-                                      transform.rotation.pitch, transform.rotation.yaw, transform.rotation.roll]}
-                self._controls_np = control_np
-            elif world.player.id not in self._controls_dic:
-                transform = world.player.get_transform()
-                self._controls_dic.update({
-                    world.player.id: [transform.location.x, transform.location.y, transform.location.z,
-                                      transform.rotation.pitch, transform.rotation.yaw, transform.rotation.roll]})
-                self._controls_np = control_np
-            else:
-                self._controls_np = np.vstack([self._controls_np, control_np])
-        elif world.recording_save:
-            with open('control_test.json', 'w+', encoding='utf-8') as p:
-                json.dump(self._controls_dic, p)
-            np.save(f'control_test_id_{world.player.id}.npy', self._controls_np)
-
+        
         if world.replaying_enabled:
             if self._replay_count == 0:
                 for key in self._replay_controls_dic:

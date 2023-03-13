@@ -53,7 +53,6 @@ class ClassVehicleUnit(object):
         constraints = [GLOBAL_CONSTANT_DRIVE_TYPE_FILE_CONTROL_STEER,
                        GLOBAL_CONSTANT_DRIVE_TYPE_FILE_CONTROL_ALL]
         if self.__local_val_ctrl_type in constraints:  # Only affect steer
-            local_current_ctrl.steer = float(self.__local_val_ctrl_array[self.__local_val_ctrl_counter][1])
             local_current_ctrl.throttle = float(self.__local_val_ctrl_array[self.__local_val_ctrl_counter][0])
             local_current_ctrl.steer = float(self.__local_val_ctrl_array[self.__local_val_ctrl_counter][1])
             local_current_ctrl.brake = float(self.__local_val_ctrl_array[self.__local_val_ctrl_counter][2])
