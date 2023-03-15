@@ -3,6 +3,7 @@ import gc
 import carla
 import random
 from tqdm import tqdm
+import sys
 
 # read configs from json file.
 from .module_file_reader import function_get_map_json, function_get_weather_json
@@ -19,9 +20,10 @@ from .module_vehicle_manager import instance_var_vehicle_manager as global_var_v
 # import global sensor manager to control sensors
 from .module_sensor_manager import instance_var_sensor_manager as global_val_sensor_manager
 
-#
+# import global sensor manager to control spectator
 from .module_spectator_manager import instance_var_spectator_manager as global_val_spectator_manager
 
+from .module_signal_control import function_get_global_signal
 
 class ClassSimulatorManager(object):
 
@@ -46,7 +48,7 @@ class ClassSimulatorManager(object):
         self.local_val_host = parameter_host
         self.local_val_port = parameter_port
         self.local_val_client = carla.Client(self.local_val_host, self.local_val_port)# get client
-        self.local_val_client.set_timeout(20.0)  # 20s timeout
+        self.local_val_client.set_timeout(15.0)  # 20s timeout
         self.local_val_scene_config_path = parameter_path_scene
         self.local_val_sensor_config_path = parameter_path_sensor
         global_val_spectator_manager.function_register_spectator(self.local_val_client.get_world())
@@ -57,7 +59,7 @@ class ClassSimulatorManager(object):
               f'\033[1;33m{self.local_val_sensor_config_path}\033[0m')
         print('\033[1;32m[Save Data Path]:\033[0m', '    ',
               f'\033[1;33m{self.local_val_save_path}\033[0m')
-
+        
     def function_init_world(self) -> None:
         """
         This function set the initial state of the world.
@@ -123,7 +125,7 @@ class ClassSimulatorManager(object):
 
             with tqdm(total=local_val_frame_num, unit='frame', leave=True, colour='blue') as pbar:
                 pbar.set_description(f'Processing')
-                while local_val_frame_start <= local_val_frame_end:
+                while (not function_get_global_signal()) and (local_val_frame_start <= local_val_frame_end):
                     # flush vehicle state
                     global_var_vehicle_manager.function_flush_vehicles(self.local_val_client)
                     self.local_val_client.get_world().tick()  # tick the world
@@ -132,12 +134,23 @@ class ClassSimulatorManager(object):
                         pbar.update(1)
                     else:
                         raise Exception('funciton_sync_sensors error')
+        finally:
+            
+            #  # ctrl c capture
+            # if function_get_global_signal():
+            #     print('\033[1;31m[Receive Exit Signal] Reloading World, Please Wait!\033[0m')
+            #     self.local_val_client.get_world().apply_settings(self.local_val_origin_world_settings)
+            #     self.local_val_client.reload_world(reset_settings=False)
+            #     print('\033[1;31m[Receive Exit Signal] Exit Main Process Bye!\033[0m')
+            #     sys.exit()
 
             # destroy all sensors
+            
+            # self.local_val_client.get_world().tick()
+            # print('\033[1;35m[Stop All Sensors]\033[0m')
             global_val_sensor_manager.function_stop_sensors()
             global_val_sensor_manager.function_destroy_sensors(self.local_val_client)
-            for i in range(100):
-                self.local_val_client.get_world().tick()
+            self.local_val_client.get_world().tick()
             global_val_sensor_manager.function_clean_sensors()
             print('\033[1;35m[Destroy All Sensors]\033[0m')
 
@@ -146,9 +159,14 @@ class ClassSimulatorManager(object):
             self.local_val_client.get_world().tick()
             print('\033[1;35m[Destroy All Vehicles]\033[0m')
 
-        finally:
             # recover world settings
             self.local_val_client.get_world().apply_settings(self.local_val_origin_world_settings)
+
+            if function_get_global_signal():
+                print('\033[1;31m[Receive Exit Signal] Exit Main Process Bye!\033[0m')
+                sys.exit()
+
+            
 
     def function_start_sim_collect(self,
                                    parameter_split_num: int = 3):
@@ -172,7 +190,7 @@ class ClassSimulatorManager(object):
                 print(f'\033[1;32m[Part {i+1}]:\033[0m', '    ', f'\033[1;33m{str(local_val_part_sensors)}\033[0m')
                 self._function_sim_one_step(local_val_part)
                 gc.collect()
-                time.sleep(5.0)
+                time.sleep(3.0)
         print('\033[1;35m------------------------------------COLLECT END-------------------------------------------------\033[0m')
 
 
