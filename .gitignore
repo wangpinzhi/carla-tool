@@ -1,13 +1,8 @@
 output
-cube_help.npy
-tools/generate_traffic.py
 *.zip
 video/
-<<<<<<< Updated upstream
-scenes/
-=======
 scenes/
 *.avi
 __pycache__
 .idea
->>>>>>> Stashed changes
+.vscode
