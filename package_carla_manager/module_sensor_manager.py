@@ -12,6 +12,8 @@ import func_timeout
 from .module_vehicle_manager import instance_var_vehicle_manager as global_var_vehicle_manager
 from .module_spectator_manager import instance_var_spectator_manager as global_var_spectator_manager
 
+from .module_signal_control import function_get_global_signal
+
 __all__ = ['instance_var_sensor_manager']
 
 GLOBAL_CONSTANT_SENSOR_TYPE_CUBE = 0
@@ -35,7 +37,7 @@ class ClassSensorUnit(Thread):
         self.__local_val_name_id = parameter_name_id
         self.__local_val_save_queue = Queue()
         self.__local_val_task_lock = Queue(maxsize=1)
-
+    
     def function_get_save_queue(self):
         return self.__local_val_save_queue
 
@@ -50,11 +52,11 @@ class ClassSensorUnit(Thread):
         self.__local_val_task_lock.join()
 
     def function_save_data(self):
-        while self.__local_val_life_counter > 0:
-            self.__local_val_task_lock.get(block=True, timeout=None)
-            local_val_save_data = {}
+        while self.__local_val_life_counter != 0:
             try:
-                local_val_data = self.__local_val_save_queue.get(block=True, timeout=None)
+                self.__local_val_task_lock.get(block=True, timeout=3.0)
+                local_val_save_data = {}
+                local_val_data = self.__local_val_save_queue.get(block=True, timeout=0.2)
                 # print(self.name, self.__local_val_name_id, local_val_name, self.__local_val_frame_counter)
                 local_val_save_data['ex_matrix'] = np.array(local_val_data.transform.get_matrix())
                 local_val_save_data['timestamp'] = local_val_data.timestamp
@@ -74,12 +76,11 @@ class ClassSensorUnit(Thread):
                 )
                 self.__local_val_frame_counter += 1
                 self.__local_val_life_counter -= 1
-            except Empty:
-                print('Empty Error Exit Thread :', self.name)
-                break
-            finally:
                 self.__local_val_task_lock.task_done()
-            # save data to npz
+            except Empty:
+                if function_get_global_signal():
+                    print(f'\033[1;31m {self.name} receive exit signal\033[0m')
+                    break
 
     def function_listen(self,
                         parameter_save_path: str):
@@ -99,7 +100,7 @@ class ClassSensorUnit(Thread):
 
     def function_destroy(self,
                          parameter_client: carla.Client):
-        parameter_client.apply_batch_sync([carla.command.DestroyActor(self.__local_val_root_actor.id)], False)
+        parameter_client.apply_batch_sync([carla.command.DestroyActor(self.__local_val_root_actor.id)])
 
     def function_stop(self):
         """
@@ -141,6 +142,7 @@ class ClassCubeSensorUnit(Thread):
 
     def run(self) -> None:
         self.function_save_data()
+        
 
     def function_sync(self):
         self.__local_val_task_lock.put(1, block=True, timeout=None)
@@ -148,11 +150,12 @@ class ClassCubeSensorUnit(Thread):
 
     def function_save_data(self):
         while self.__local_val_life_counter != 0:
-            self.__local_val_task_lock.get(block=True, timeout=None)
-            local_val_save_data = {}
             try:
-                for i in range(6):
-                    local_val_name, local_val_data = self.__local_val_save_queue.get(block=True, timeout=None)
+                self.__local_val_task_lock.get(block=True, timeout=3.0)
+                local_val_save_data = {}
+                local_val_idx = 0
+                while local_val_idx < 6:
+                    local_val_name, local_val_data = self.__local_val_save_queue.get(block=True, timeout=0.3)
                     # print(self.name, self.__local_val_name_id, local_val_name, self.__local_val_frame_counter)
                     if local_val_name == 'front':
                         local_val_save_data['ex_matrix'] = np.array(local_val_data.transform.get_matrix())
@@ -161,10 +164,11 @@ class ClassCubeSensorUnit(Thread):
                     # convert raw data to numpy array
                     local_val_data_array = np.frombuffer(local_val_data.raw_data, dtype=np.dtype("uint8"))
                     local_val_data_array = np.reshape(local_val_data_array,
-                                                      (local_val_data.height, local_val_data.width, 4))
+                                                    (local_val_data.height, local_val_data.width, 4))
                     local_val_data_array = local_val_data_array[:, :, :3]
                     local_val_save_data[local_val_name] = local_val_data_array
-
+                    local_val_idx = local_val_idx + 1
+                # save data to npz
                 np.savez(
                     os.path.join(self.__local_val_save_path,
                                  f'{self.__local_val_name_id}_{self.__local_val_frame_counter}.npz'),
@@ -179,13 +183,12 @@ class ClassCubeSensorUnit(Thread):
                 )
                 self.__local_val_frame_counter += 1
                 self.__local_val_life_counter -= 1
-            except Empty:
-                print('Empty Error Exit Thread :', self.name)
-                break
-            finally:
                 self.__local_val_task_lock.task_done()
-
-            # save data to npz
+            except Empty:
+                if function_get_global_signal():
+                    print(f'\033[1;31m {self.name} receive exit signal\033[0m')
+                    break
+            
 
     def _function_get_sensor_group(self) -> dict:
         local_val_cube_info = [('left', carla.Rotation(0., -90., 0)), ('right', carla.Rotation(0., 90., 0.)),
@@ -244,7 +247,7 @@ class ClassCubeSensorUnit(Thread):
         local_actors_id = [self.__local_sensor_group['left'], self.__local_sensor_group['right'],
                            self.__local_sensor_group['up'], self.__local_sensor_group['down'],
                            self.__local_sensor_group['back'], self.__local_sensor_group['front']]
-        parameter_client.apply_batch_sync([carla.command.DestroyActor(x) for x in local_actors_id],False)
+        parameter_client.apply_batch_sync([carla.command.DestroyActor(x) for x in local_actors_id])
         
     def function_clean(self):
         del self.__local_val_store[:]
@@ -360,6 +363,7 @@ class ClassSensorManager(object):
         :return:
         """
         for sensor in self.__local_val_sensors:
+            sensor.setDaemon(True)
             sensor.start()
 
     def function_stop_sensors(self):
@@ -393,12 +397,12 @@ class ClassSensorManager(object):
 def function_cube_sensor_callback(parameter_data: carla.SensorData,
                                   parameter_name: str,
                                   parameter_cube_sensor: ClassCubeSensorUnit):
-    if parameter_cube_sensor.function_get__life_counter() != 0:
+    if (not function_get_global_signal()) and parameter_cube_sensor.function_get__life_counter() != 0:
         parameter_cube_sensor.function_get_save_queue().put((parameter_name, parameter_data))
 
 def function_sensor_callback(parameter_data: carla.SensorData,
                              parameter_sensor: ClassSensorUnit):
-    if parameter_sensor.function_get__life_counter() != 0:
+    if (not function_get_global_signal()) and parameter_sensor.function_get__life_counter() != 0:
         parameter_sensor.function_get_save_queue().put(parameter_data)
 
 
