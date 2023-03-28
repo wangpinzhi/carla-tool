@@ -53,7 +53,7 @@ python tools/cubemap2fisheye.py     --fov 190^
                                     --cubeW 2560^
                                     --outW 2560^
                                     --frames %FRAMES%^
-                                    --r_x 0^
+                                    --r_x 30^
                                     --output_dir "%ROOT_DIR%/post_data"^
                                     --use_cuda
 echo "Process Pinhole"

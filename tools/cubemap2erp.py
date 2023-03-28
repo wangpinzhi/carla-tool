@@ -251,7 +251,7 @@ if __name__ == '__main__':
                 
             # im.save(os.path.join(args.output_vis_dir, f'erp_vis_{cam}_{frame}.jpg'))
             cv2.imwrite(os.path.join(args.output_vis_dir, f'erp_vis_{cam}_{frame}.jpg'), vis_color, [int(cv2.IMWRITE_JPEG_QUALITY), 97])
-            np.save(os.path.join(args.output_dir, f'erp_{cam}_{frame}.npy'), out)
+            np.savez(os.path.join(args.output_dir, f'erp_{cam}_{frame}.npz'), out)
 
 
         else:
