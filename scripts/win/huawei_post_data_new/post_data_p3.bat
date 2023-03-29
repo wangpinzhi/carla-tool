@@ -5,28 +5,28 @@ set ROOT_PATH=%1
 
 echo "process cm_rgb4 cm_rgb5 cm_rgb2"
 
-@REM start python tools/cubemap2pinhole.py   --fov 150^
-@REM                                         --cubeW 2560^
-@REM                                         --outH 1856^
-@REM                                         --outW 2880^
-@REM                                         --format "jpg"^
-@REM                                         --external_path "%ROOT_PATH%/external.txt"^
-@REM                                         --cubemap_dir "%ROOT_PATH%/cubemap"^
-@REM                                         --output_dir "%ROOT_PATH%/pinhole_new"^
-@REM                                         --camera "cm_rgb4"^
-@REM                                         --use_cuda
-                                        
-
 start python tools/cubemap2pinhole.py   --fov 150^
                                         --cubeW 2560^
-                                        --outH 1080^
-                                        --outW 1920^
+                                        --outH 1856^
+                                        --outW 2880^
                                         --format "jpg"^
                                         --external_path "%ROOT_PATH%/external.txt"^
                                         --cubemap_dir "%ROOT_PATH%/cubemap"^
                                         --output_dir "%ROOT_PATH%/pinhole_new"^
-                                        --camera "cm_rgb5"^
+                                        --camera "cm_rgb4"^
                                         --use_cuda
+                                        
+
+@REM start python tools/cubemap2pinhole.py   --fov 150^
+@REM                                         --cubeW 2560^
+@REM                                         --outH 1080^
+@REM                                         --outW 1920^
+@REM                                         --format "jpg"^
+@REM                                         --external_path "%ROOT_PATH%/external.txt"^
+@REM                                         --cubemap_dir "%ROOT_PATH%/cubemap"^
+@REM                                         --output_dir "%ROOT_PATH%/pinhole_new"^
+@REM                                         --camera "cm_rgb5"^
+@REM                                         --use_cuda
                                         
 
 @REM start /WAIT python tools/cubemap2pinhole.py   --fov 60^
