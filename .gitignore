@@ -6,3 +6,4 @@ scenes/
 __pycache__
 .idea
 .vscode
+test.py
