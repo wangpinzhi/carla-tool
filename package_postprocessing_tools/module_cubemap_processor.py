@@ -18,9 +18,8 @@ class ClassCubemapProcesser(object):
         self.local_val_target_fov = parameter_target_fov
         self.local_val_device = parameter_device
         self.local_val_grids = None
-        if parameter_target_type == 'fe':
-            self.local_val_grids = self.__get_fisheye_grids()
-            print(self.local_val_grids.keys())
+        self.local_val_target_type = parameter_target_type
+        self.local_val_grids = self.__get_grids()
 
     def __transforms(self, 
                      parameter_alpha,
@@ -41,26 +40,34 @@ class ClassCubemapProcesser(object):
         local_val_target_alpha = np.arccos(local_val_target_X / local_val_target_r)
 
         return local_val_target_alpha, local_val_target_beta
-    
-    def __get_fisheye_grids(self):
-        local_val_target_grids = {} 
 
-        local_val_alpha_max =  np.deg2rad(self.local_val_target_fov) / 2
-        local_val_target_focal = (self.local_val_target_width/2) / local_val_alpha_max
-
+    def __get_grids(self):
+        local_val_target_grids = {}
+        
         # gridy, gridz
-        local_val_Y, local_val_Z = np.meshgrid(range(self.local_val_target_width), range(self.local_val_target_width))
+        local_val_Y, local_val_Z = np.meshgrid(range(self.local_val_target_width), range(self.local_val_target_height))
         local_val_Y = local_val_Y.astype(np.float32)
         local_val_Z = local_val_Z.astype(np.float32)
         local_val_centerY = (self.local_val_target_width - 1 ) / 2
-        local_val_centerZ = (self.local_val_target_width - 1 ) / 2
+        local_val_centerZ = (self.local_val_target_height - 1 ) / 2
         local_val_Y = local_val_Y - local_val_centerY
         local_val_Z = -(local_val_Z - local_val_centerZ)
-        
-        local_val_R = np.sqrt(local_val_Y*local_val_Y+local_val_Z*local_val_Z)
-        local_val_alpha = local_val_R / local_val_target_focal  # rad instead of degree
-        local_val_beta = np.arctan2(local_val_Z, local_val_Y)
-        local_val_invalid_mask = local_val_alpha > local_val_alpha_max
+
+        if self.local_val_target_type == 'fe': # fisheye model
+            assert self.local_val_target_width == self.local_val_target_height
+            local_val_alpha_max =  np.deg2rad(self.local_val_target_fov) / 2
+            local_val_target_focal = (self.local_val_target_width/2) / local_val_alpha_max 
+            local_val_R = np.sqrt(local_val_Y*local_val_Y+local_val_Z*local_val_Z)
+            local_val_alpha = local_val_R / local_val_target_focal  # rad instead of degree
+            local_val_beta = np.arctan2(local_val_Z, local_val_Y)
+            local_val_invalid_mask = local_val_alpha > local_val_alpha_max
+
+        elif self.local_val_target_type == 'ph': # pinhole model
+            local_val_ph_focal = self.local_val_target_width / (2*np.tan(np.deg2rad(self.local_val_target_fov) / 2))
+            local_val_r = np.sqrt(local_val_ph_focal**2+local_val_Y**2+local_val_Z**2)
+            local_val_alpha = np.arccos(local_val_ph_focal/local_val_r)
+            local_val_beta = np.arctan2(local_val_Z, local_val_Y)
+            local_val_invalid_mask = local_val_alpha < 0 
         
         # transforms 
         if self.local_val_rot_matrix is not None:
@@ -148,7 +155,7 @@ class ClassCubemapProcesser(object):
                 local_val_target = local_val_temp
             else:
                 local_val_target += local_val_temp
-                # pass
+  
         return local_val_target
         
 

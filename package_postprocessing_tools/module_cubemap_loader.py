@@ -7,18 +7,18 @@ class ClassCubemapDataset(Dataset):
     def __init__(self, 
                  parameter_cubemap_dir,
                  parameter_cubemap_order,
-                 parameter_target_type,
+                 parameter_target_model,
                  parameter_target_format):
         self.local_val_cubemap_dir = parameter_cubemap_dir
         self.local_val_files = os.listdir(self.local_val_cubemap_dir)
         self.local_val_format = parameter_target_format
-        self.local_val_type = parameter_target_type
+        self.local_val_model = parameter_target_model
         self.local_val_order = parameter_cubemap_order
 
     def __getitem__(self, index):        
         
         local_val_file = self.local_val_files[index]
-        local_val_save_name = local_val_file.replace('cm', self.local_val_type)
+        local_val_save_name = local_val_file.replace('cm', self.local_val_model)
         local_val_save_name = local_val_save_name.split('.')[0] + '.' + self.local_val_format
         local_val_full_path = os.path.join(self.local_val_cubemap_dir, local_val_file)
         local_val_array = np.load(local_val_full_path)
