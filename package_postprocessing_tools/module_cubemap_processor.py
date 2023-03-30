@@ -87,7 +87,8 @@ class ClassCubemapProcesser(object):
         # left grid
         local_val_left_mask = (np.cos(local_val_beta) > 0) | local_val_invalid_mask
         local_val_left_Z = np.tan(local_val_beta)
-        local_val_left_X = (-1) / (np.tan(local_val_alpha)*np.cos(local_val_beta))
+        with np.errstate(divide='ignore'):
+            local_val_left_X = (-1) / (np.tan(local_val_alpha)*np.cos(local_val_beta))
         local_val_left_Z[local_val_left_mask] = -2.
         local_val_left_X[local_val_left_mask] = -2.
         local_val_left_grid = np.dstack((local_val_left_X, local_val_left_Z))
@@ -109,7 +110,8 @@ class ClassCubemapProcesser(object):
         # right grid
         local_val_right_mask = (np.cos(local_val_beta) < 0) | local_val_invalid_mask
         local_val_right_Z = -np.tan(local_val_beta)
-        local_val_right_X = (-1) / (np.tan(local_val_alpha)*np.cos(local_val_beta))
+        with np.errstate(divide='ignore'):
+            local_val_right_X = (-1) / (np.tan(local_val_alpha)*np.cos(local_val_beta))
         local_val_right_Z[local_val_right_mask] = -2.
         local_val_right_X[local_val_right_mask] = -2.
         local_val_right_grid = np.dstack((local_val_right_X, local_val_right_Z))
@@ -120,8 +122,9 @@ class ClassCubemapProcesser(object):
 
         # up grid
         local_val_up_mask = (np.sin(local_val_beta) < 0) | local_val_invalid_mask
-        local_val_up_X = 1 / (np.tan(local_val_alpha)*np.sin(local_val_beta))
-        local_val_up_Y = 1 / (np.tan(local_val_beta))
+        with np.errstate(divide='ignore'):
+            local_val_up_X = 1 / (np.tan(local_val_alpha)*np.sin(local_val_beta))
+            local_val_up_Y = 1 / (np.tan(local_val_beta))
         local_val_up_X[local_val_up_mask] = -2.
         local_val_up_Y[local_val_up_mask] = -2.
         local_val_up_grid =  np.dstack((local_val_up_Y, local_val_up_X))
@@ -131,8 +134,9 @@ class ClassCubemapProcesser(object):
         
         # down grid
         local_val_down_mask = (np.sin(local_val_beta) > 0) | local_val_invalid_mask
-        local_val_down_X = 1 / (np.tan(local_val_alpha)*np.sin(local_val_beta))
-        local_val_down_Y = (-1) / (np.tan(local_val_beta))
+        with np.errstate(divide='ignore'):
+            local_val_down_X = 1 / (np.tan(local_val_alpha)*np.sin(local_val_beta))
+            local_val_down_Y = (-1) / (np.tan(local_val_beta))
         local_val_down_X[local_val_down_mask] = -2.
         local_val_down_Y[local_val_down_mask] = -2.
         local_val_down_grid = np.dstack((local_val_down_Y, local_val_down_X))

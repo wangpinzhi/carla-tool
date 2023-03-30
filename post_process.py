@@ -52,8 +52,9 @@ def main(args):
         if cam_model == 'erp':
             continue
 
-        if 'rot_deg' in sensor.keys():
-            target_rot = R.from_euler(seq='ZYX', angles=sensor['post_process']['rot_deg'], degrees=True)
+        if 'rotation' in sensor.keys():
+            rot = sensor['post_process']['rotation']
+            target_rot = R.from_euler(seq=rot['seq'], angles=rot['angles'], degrees=rot['degrees'])
             target_rot = target_rot.as_matrix().astype(np.float32)
 
         post_dataset = ClassCubemapDataset(
