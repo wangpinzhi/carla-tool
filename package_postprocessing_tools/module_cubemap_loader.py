@@ -8,12 +8,14 @@ class ClassCubemapDataset(Dataset):
                  parameter_cubemap_dir,
                  parameter_cubemap_order,
                  parameter_target_model,
-                 parameter_target_format):
+                 parameter_target_format,
+                 parameter_target_type):
         self.local_val_cubemap_dir = parameter_cubemap_dir
         self.local_val_files = os.listdir(self.local_val_cubemap_dir)
         self.local_val_format = parameter_target_format
         self.local_val_model = parameter_target_model
         self.local_val_order = parameter_cubemap_order
+        self.local_val_type = parameter_target_type
 
     def __getitem__(self, index):        
         
