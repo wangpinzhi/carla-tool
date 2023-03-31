@@ -30,7 +30,11 @@ class ClassCubemapProcesser(object):
         local_val_temp_coor3d = np.dstack((local_val_temp_X, local_val_temp_Y, local_val_temp_Z))
         local_val_temp_coor3d = np.expand_dims(local_val_temp_coor3d, axis=-1) # H*W*3*1
         
-        local_val_target_coor3d = np.matmul(self.local_val_rot_matrix, local_val_temp_coor3d).squeeze(-1) # H*W*3
+        LR_mat = np.array([[1., 0., 0.], [0., -1., 0.], [0., 0., 1.]], dtype=np.float32)
+        local_val_temp_coor3d = np.matmul(LR_mat, local_val_temp_coor3d) # L -> R coordinate system
+        local_val_target_coor3d = np.matmul(self.local_val_rot_matrix, local_val_temp_coor3d)
+        local_val_target_coor3d = np.matmul(LR_mat, local_val_target_coor3d).squeeze(-1) # R -> L
+
         local_val_target_X = local_val_target_coor3d[:,:,0] #H*W
         local_val_target_Y = local_val_target_coor3d[:,:,1]
         local_val_target_Z = local_val_target_coor3d[:,:,2]
