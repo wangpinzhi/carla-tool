@@ -2,9 +2,13 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
+from .module_cubemap_loader import GLOBAL_CONSTANT_TARGET_MODEL_PINHOLE
+from .module_cubemap_loader import GLOBAL_CONSTANT_TARGET_MODEL_ERP
+from .module_cubemap_loader import GLOBAL_CONSTANT_TARGET_MODEL_FISHEYE
+
 class ClassCubemapProcesser(object):
     def __init__(self, 
-                 parameter_target_type,
+                 parameter_target_model,
                  parameter_target_height, # fisheye model will discard it
                  parameter_target_width,
                  parameter_target_fov, # degree
@@ -13,12 +17,11 @@ class ClassCubemapProcesser(object):
                  parameter_device='cpu'):
         self.local_val_rot_matrix = parameter_rot_matrix
         self.local_val_batchsize = parameter_batchsize
+        self.local_val_target_model = parameter_target_model
         self.local_val_target_height = parameter_target_height
         self.local_val_target_width  = parameter_target_width
         self.local_val_target_fov = parameter_target_fov
         self.local_val_device = parameter_device
-        self.local_val_grids = None
-        self.local_val_target_type = parameter_target_type
         self.local_val_grids = self.__get_grids()
 
     def __transforms(self, 
@@ -57,7 +60,7 @@ class ClassCubemapProcesser(object):
         local_val_Y = local_val_Y - local_val_centerY
         local_val_Z = -(local_val_Z - local_val_centerZ)
 
-        if self.local_val_target_type == 'fe': # fisheye model
+        if self.local_val_target_model == GLOBAL_CONSTANT_TARGET_MODEL_FISHEYE: # fisheye model
             assert self.local_val_target_width == self.local_val_target_height
             local_val_alpha_max =  np.deg2rad(self.local_val_target_fov) / 2
             local_val_target_focal = (self.local_val_target_width/2) / local_val_alpha_max 
@@ -66,12 +69,24 @@ class ClassCubemapProcesser(object):
             local_val_beta = np.arctan2(local_val_Z, local_val_Y)
             local_val_invalid_mask = local_val_alpha > local_val_alpha_max
 
-        elif self.local_val_target_type == 'ph': # pinhole model
+        elif self.local_val_target_model == GLOBAL_CONSTANT_TARGET_MODEL_PINHOLE: # pinhole model
             local_val_ph_focal = self.local_val_target_width / (2*np.tan(np.deg2rad(self.local_val_target_fov) / 2))
             local_val_r = np.sqrt(local_val_ph_focal**2+local_val_Y**2+local_val_Z**2)
             local_val_alpha = np.arccos(local_val_ph_focal/local_val_r)
             local_val_beta = np.arctan2(local_val_Z, local_val_Y)
             local_val_invalid_mask = local_val_alpha < 0 
+        
+        elif self.local_val_target_model == GLOBAL_CONSTANT_TARGET_MODEL_ERP: # erp model
+            local_val_unit = np.pi / self.local_val_target_height
+            local_val_theta = local_val_back_Y * local_val_unit
+            local_val_phi =  local_val_back_Z * local_val_unit
+            local_val_temp_z = np.sin(local_val_phi)
+            local_val_temp_x = np.cos(local_val_phi) * np.cos(local_val_theta)
+            local_val_temp_y = np.cos(local_val_phi) * np.sin(local_val_theta)
+            local_val_r = np.sqrt(local_val_temp_x**2+local_val_temp_y**2+local_val_temp_z**2)
+            local_val_alpha = np.arccos(local_val_temp_x/local_val_r)
+            local_val_beta = np.arctan2(local_val_temp_z, local_val_temp_y)
+            local_val_invalid_mask = np.array(np.ones_like(local_val_alpha), dtype=np.bool8)
         
         # transforms 
         if self.local_val_rot_matrix is not None:
@@ -122,7 +137,6 @@ class ClassCubemapProcesser(object):
         local_val_right_grid = np.expand_dims(local_val_right_grid, axis=0).repeat(self.local_val_batchsize, axis=0)
         local_val_target_grids['right_data'] = torch.from_numpy(local_val_right_grid).to(self.local_val_device)
         local_val_target_grids['right_data'].requires_grad = False
-
 
         # up grid
         local_val_up_mask = (np.sin(local_val_beta) < 0) | local_val_invalid_mask
