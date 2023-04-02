@@ -3,7 +3,7 @@
 **Version preview-1.0**
 
 # 1 Introduction
-<center><img src="./docs/images/Demo.gif" width="320"> </center><br>
+<center><img src="./docs/images/Demo.gif" width="640"> </center><br>
 
 This project is based on the open-source project [Carla](http://carla.org/), with the aim of helping people collect heterogeneous multi-viewpoint depth datasets, such as panoramic cameras, fisheye cameras, pinhole cameras, etc., including depth images from these cameras, for the purpose of creating autonomous driving datasets. The code for this project was written based on the API documentation and examples provided by [Carla](http://carla.org/).
 
