@@ -48,6 +48,7 @@ The key field 'map' is used to indicate which map the scene uses. Generally, the
 
 ## 3.2 Weather Config
 
+The keyword 'weather' can control the weather of the scene, and the fields contained in it are consistent with the objects contained in the 'WeatherParameter' in the official Carla document. Please refer to [carla weather](https://carla.readthedocs.io/en/latest/python_api/#carlaweatherparameters) for details.
 
 
 ```json
@@ -56,4 +57,52 @@ The key field 'map' is used to indicate which map the scene uses. Generally, the
         "sun_altitude_angle" : -45.0
     }
 }
+```
+
+## 3.3 Vehicle Config
+
+The vehicles in the scene are controlled by the "vehicle_manager", and before the next frame of world operation in the simulator, the "vehicle_manager" will control the vehicle operation according to the settings in the "JSON" configuration file. 
+
+* "role_name" 
+  * Each vehicle has a unique name, and the sensor is usually set on the "hero" vehicle.
+* "blueprint"
+  * The definition is consistent with that in the official Carla document([carla blueprint](https://carla.readthedocs.io/en/latest/bp_library/#vehicle)).
+* "spawn_point"
+  * The generated position of the vehicle in the map.
+  * [carla.location.x, carla.location.y, carla.location.z, carla.rotation.pitch, carla.rotation.yaw, carla.rotation.roll]
+  * Refer to [carla transform](https://carla.readthedocs.io/en/latest/python_api/#carlatransform)
+* "drive_type"
+  * 0(static) represents that the vehicle is not moving and is in a stationary state.
+  * 1(autopilot) represents the vehicle being controlled by 'traffic_manager', please refer to [carla traffic manager](https://carla.readthedocs.io/en/latest/ts_traffic_simulation_overview/#traffic-manager)
+  * 2(ctrl_by_file_wheel)
+
+* WARNINGS
+    >The 'vehicle. audit. invisible' in the document is our own definition and is not provided in the official document. 
+    >This blueprint sets 'vehicle.audi.tt 'as a transparent material. If you do not have this blueprint, please use another blueprint instead.
+
+```json
+"vehicles": [
+    {
+      "role_name": "hero",
+      "blueprint": "vehicle.audi.invisiable",
+      "spawn_point": [17.30, -40.20, 0.5, 0.0, -20.0, 0.0],
+      "drive_type" : 2,
+      "drive_file": "output/huawei_demo_parking/configs/drive_flies/ctrl_tt0.npy",
+      "constant_velocity" : [-0.3, 0.0, 0.0]
+    },
+    {
+      "role_name": "file_control_steer",
+      "blueprint": "vehicle.mercedes.coupe_2020",
+      "spawn_point": [-1.90, -34.20, 0.5, 0.0, 150.0, 0.0],
+      "drive_type" : 2,
+      "drive_file": "output/huawei_demo_parking/configs/drive_flies/ctrl_mercedes_coupe0.npy",
+      "constant_velocity" : [-0.3, 0.0, 0.0]
+    },
+    {
+      "role_name": "static",
+      "blueprint": "vehicle.dodge.charger_police",
+      "spawn_point": [3.50, -41.20, 0.5, 0.0, -180.0, 0.0],
+      "drive_type" : 0
+    }
+  ]
 ```
