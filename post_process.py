@@ -8,10 +8,15 @@ from tqdm import tqdm
 from scipy.spatial.transform import Rotation as R
 import torch
 from torch.utils.data import DataLoader
+from PIL import Image
 
 from package_postprocessing_tools import ClassCubemapProcesser
 from package_postprocessing_tools import ClassCubemapDataset
 from package_carla_manager import function_get_sensor_json_list
+from package_postprocessing_tools.module_cubemap_enum import EnumCamModel
+from package_postprocessing_tools.module_cubemap_enum import EnumTargetType
+
+cv2.setNumThreads(0)
 
 def get_args():
     parser = argparse.ArgumentParser(description='scripts for post-processing raw data')
@@ -41,17 +46,23 @@ def main(args):
         target_fov = sensor['post_process']['fov']
         target_width = sensor['post_process']['width']
         target_height = sensor['post_process']['height']
-        target_format = sensor['post_process']['format']
+        target_type = sensor['post_process']['type']
         target_rot = None
         print('[Process {}] CamModel:{}, ImageH: {}, ImageW:{}, ImageFov:{}, ImageFormat:{}'.format(name_id,
                                                                                                     cam_model,
                                                                                                     target_height,
                                                                                                     target_width,
                                                                                                     target_fov,
-                                                                                                    target_format))
-        if cam_model == 'erp':
+                                                                                                target_type))
+        subdir = 'default'
+        if cam_model == EnumCamModel['ERP']:
+            subdir = 'erp'
             continue
-
+        elif cam_model == EnumCamModel['FISHEYE']:
+            subdir = f'fisheye{target_fov}_new'
+        elif cam_model == EnumCamModel['PINHOLE']:
+            subdir = f'pinhole_new'
+         
         if 'rotation' in sensor.keys():
             rot = sensor['post_process']['rotation']
             target_rot = R.from_euler(seq=rot['seq'], angles=rot['angles'], degrees=rot['degrees'])
@@ -61,7 +72,7 @@ def main(args):
             parameter_cubemap_dir=os.path.join(args.raw_data_dir,f'{name_id}'),
             parameter_cubemap_order=cube_order,
             parameter_target_model=cam_model,
-            parameter_target_format=target_format,
+            parameter_target_type=target_type,
         )
         post_dataloader = DataLoader(dataset=post_dataset, batch_size=args.batch_size, num_workers=args.num_workers)
         
@@ -71,7 +82,7 @@ def main(args):
             device = torch.device('cuda:{}'.format(args.gpu))
 
         post_processer = ClassCubemapProcesser(
-            parameter_target_type=cam_model,
+            parameter_target_model=cam_model,
             parameter_target_height=target_height,
             parameter_target_width=target_width,
             parameter_target_fov=target_fov,
@@ -80,16 +91,22 @@ def main(args):
             parameter_batchsize=args.batch_size,
         )
 
-        save_dir = os.path.join(args.save_dir, f'{name_id}')
+        save_dir = os.path.join(args.save_dir, subdir)
         os.makedirs(save_dir, exist_ok=True)
-        
+        # print(save_dir)
+
         for item in tqdm(post_dataloader):
             results = post_processer.trans(item['cube'], cube_order)
             for i in range(args.batch_size):
-                img = results[i].cpu().numpy()
-                img = img.astype(np.uint8)
-                img = img.transpose(1, 2, 0)
-                cv2.imwrite(os.path.join(save_dir,item['save_name'][i]), img)
+                raw_data = results[i].cpu().numpy()
+                if target_type == EnumTargetType['DEPTH']:
+                    np.savez(os.path.join(save_dir,item['save_name'][i]), raw_data)
+                elif target_type == EnumTargetType['RGB']:
+                    img = raw_data.astype(np.uint8)
+                    img = img.transpose(1, 2, 0)
+                    img = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+                    img.save(os.path.join(save_dir,item['save_name'][i]))
+                    # cv2.imwrite(, img)
 
 if __name__ == '__main__':
     args = get_args()

@@ -33,7 +33,8 @@ class ClassSimulatorManager(object):
                  parameter_path_scene: str,
                  parameter_path_sensor: str,
                  parameter_path_save: str = './output',
-                 parameter_random_seed: int = 136):
+                 parameter_random_seed: int = 136,
+                 parameter_client_timeout: float = 20.0):
         """
         :param parameter_path_save: path to save data (Default: './output')
         :param parameter_host: client bind host. (Default: 127.0.0.0.1)
@@ -48,7 +49,7 @@ class ClassSimulatorManager(object):
         self.local_val_host = parameter_host
         self.local_val_port = parameter_port
         self.local_val_client = carla.Client(self.local_val_host, self.local_val_port)# get client
-        self.local_val_client.set_timeout(15.0)  # 20s timeout
+        self.local_val_client.set_timeout(parameter_client_timeout)  # Default 20s timeout
         self.local_val_scene_config_path = parameter_path_scene
         self.local_val_sensor_config_path = parameter_path_sensor
         global_val_spectator_manager.function_register_spectator(self.local_val_client.get_world())
