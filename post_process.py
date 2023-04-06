@@ -49,11 +49,11 @@ def main(args):
         target_type = sensor['post_process']['type']
         target_rot = None
         print('[Process {}] CamModel:{}, ImageH: {}, ImageW:{}, ImageFov:{}, ImageFormat:{}'.format(name_id,
-                                                                                                    cam_model,
+                                                                                                    str(EnumCamModel(cam_model)),
                                                                                                     target_height,
                                                                                                     target_width,
                                                                                                     target_fov,
-                                                                                                target_type))
+                                                                                                    str(EnumTargetType(target_type))))
         subdir = 'default'
         if cam_model == EnumCamModel['ERP']:
             subdir = 'erp'

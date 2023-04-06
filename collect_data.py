@@ -8,7 +8,7 @@ if __name__ == '__main__':
     #     parameter_path_scene=r'output\huawei_demo_parking\configs\scene_config.json',
     #     parameter_path_save=r'output\huawei_demo_parking\raw_data',
     # )
-    name = 'huawei_slope'
+    name = 'huawei_real_parking01'
     local_val_simulator_manager = ClassSimulatorManager(
         parameter_host='127.0.0.1',
         parameter_port=2000,
@@ -17,4 +17,4 @@ if __name__ == '__main__':
         parameter_path_save=rf'output\{name}\raw_data',
     )
     local_val_simulator_manager.function_init_world()
-    local_val_simulator_manager.function_start_sim_collect(parameter_split_num=4)
+    local_val_simulator_manager.function_start_sim_collect(parameter_split_num=2)

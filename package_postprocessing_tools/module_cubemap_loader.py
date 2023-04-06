@@ -22,11 +22,11 @@ class ClassCubemapDataset(Dataset):
                                  parameter_source_name:str):
         local_val_save_name = parameter_source_name
         # save file
-        if self.local_val_type == EnumCamModel['PINHOLE']:
+        if self.local_val_model == EnumCamModel['PINHOLE']:
             local_val_save_name = local_val_save_name.replace('cm', 'ph')
-        elif self.local_val_type == EnumCamModel['FISHEYE']:
+        elif self.local_val_model == EnumCamModel['FISHEYE']:
             local_val_save_name = local_val_save_name.replace('cm', 'fe')
-        elif self.local_val_type == EnumCamModel['ERP']:
+        elif self.local_val_model == EnumCamModel['ERP']:
             local_val_save_name = local_val_save_name.replace('cm', 'erp')
         
         # get save format
