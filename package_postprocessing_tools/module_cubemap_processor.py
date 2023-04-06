@@ -2,9 +2,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from .module_cubemap_loader import GLOBAL_CONSTANT_TARGET_MODEL_PINHOLE
-from .module_cubemap_loader import GLOBAL_CONSTANT_TARGET_MODEL_ERP
-from .module_cubemap_loader import GLOBAL_CONSTANT_TARGET_MODEL_FISHEYE
+from .module_cubemap_enum import EnumCamModel
 
 class ClassCubemapProcesser(object):
     def __init__(self, 
@@ -60,7 +58,7 @@ class ClassCubemapProcesser(object):
         local_val_Y = local_val_Y - local_val_centerY
         local_val_Z = -(local_val_Z - local_val_centerZ)
 
-        if self.local_val_target_model == GLOBAL_CONSTANT_TARGET_MODEL_FISHEYE: # fisheye model
+        if self.local_val_target_model == EnumCamModel['FISHEYE']: # fisheye model
             assert self.local_val_target_width == self.local_val_target_height
             local_val_alpha_max =  np.deg2rad(self.local_val_target_fov) / 2
             local_val_target_focal = (self.local_val_target_width/2) / local_val_alpha_max 
@@ -69,14 +67,14 @@ class ClassCubemapProcesser(object):
             local_val_beta = np.arctan2(local_val_Z, local_val_Y)
             local_val_invalid_mask = local_val_alpha > local_val_alpha_max
 
-        elif self.local_val_target_model == GLOBAL_CONSTANT_TARGET_MODEL_PINHOLE: # pinhole model
+        elif self.local_val_target_model == EnumCamModel['PINHOLE']: # pinhole model
             local_val_ph_focal = self.local_val_target_width / (2*np.tan(np.deg2rad(self.local_val_target_fov) / 2))
             local_val_r = np.sqrt(local_val_ph_focal**2+local_val_Y**2+local_val_Z**2)
             local_val_alpha = np.arccos(local_val_ph_focal/local_val_r)
             local_val_beta = np.arctan2(local_val_Z, local_val_Y)
             local_val_invalid_mask = local_val_alpha < 0 
         
-        elif self.local_val_target_model == GLOBAL_CONSTANT_TARGET_MODEL_ERP: # erp model
+        elif self.local_val_target_model == EnumCamModel['ERP']: # erp model
             local_val_unit = np.pi / self.local_val_target_height
             local_val_theta = local_val_back_Y * local_val_unit
             local_val_phi =  local_val_back_Z * local_val_unit

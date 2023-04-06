@@ -3,12 +3,8 @@ import numpy as np
 from torch.utils.data import Dataset
 import torch
 
-GLOBAL_CONSTANT_TARGET_TYPE_DEPTH = 0
-GLOBAL_CONSTANT_TARGET_TYPE_RGB = 1
-
-GLOBAL_CONSTANT_TARGET_MODEL_PINHOLE = 0
-GLOBAL_CONSTANT_TARGET_MODEL_FISHEYE = 1
-GLOBAL_CONSTANT_TARGET_MODEL_ERP = 2
+from .module_cubemap_enum import EnumCamModel
+from .module_cubemap_enum import EnumTargetType
 
 class ClassCubemapDataset(Dataset):
     def __init__(self, 
@@ -26,17 +22,17 @@ class ClassCubemapDataset(Dataset):
                                  parameter_source_name:str):
         local_val_save_name = parameter_source_name
         # save file
-        if self.local_val_type == GLOBAL_CONSTANT_TARGET_MODEL_PINHOLE:
+        if self.local_val_type == EnumCamModel['PINHOLE']:
             local_val_save_name = local_val_save_name.replace('cm', 'ph')
-        elif self.local_val_type == GLOBAL_CONSTANT_TARGET_MODEL_FISHEYE:
+        elif self.local_val_type == EnumCamModel['FISHEYE']:
             local_val_save_name = local_val_save_name.replace('cm', 'fe')
-        elif self.local_val_type == GLOBAL_CONSTANT_TARGET_MODEL_ERP:
+        elif self.local_val_type == EnumCamModel['ERP']:
             local_val_save_name = local_val_save_name.replace('cm', 'erp')
         
         # get save format
-        if self.local_val_type == GLOBAL_CONSTANT_TARGET_TYPE_DEPTH:
+        if self.local_val_type == EnumTargetType['DEPTH']:
             local_val_save_name = local_val_save_name.split('.')[0] + '.npz'
-        elif self.local_val_type == GLOBAL_CONSTANT_TARGET_TYPE_RGB:
+        elif self.local_val_type == EnumTargetType['RGB']:
             local_val_save_name = local_val_save_name.split('.')[0] + '.jpg'
 
         return local_val_save_name
@@ -56,7 +52,7 @@ class ClassCubemapDataset(Dataset):
             local_val_cube_view.requires_grad = False
             local_val_cube_view = local_val_cube_view.float() # dtype force to float32
             # convert rgb to depth
-            if self.local_val_type == GLOBAL_CONSTANT_TARGET_TYPE_DEPTH:
+            if self.local_val_type == EnumTargetType['DEPTH']:
                 normalized = (local_val_cube_view[0:1,2:3,:,:] + local_val_cube_view[0:1,1:2,:,:] * 256 + local_val_cube_view[0:1,0:1,:,:] * 256 * 256) / (256 * 256 * 256 - 1)
                 in_meters = 1000 * normalized
                 _, _, H, W = in_meters
