@@ -12,6 +12,7 @@ from PIL import Image
 
 from package_postprocessing_tools import ClassCubemapProcesser
 from package_postprocessing_tools import ClassCubemapDataset
+from package_postprocessing_tools import vis_depth
 from package_carla_manager import function_get_sensor_json_list
 from package_postprocessing_tools.module_cubemap_enum import EnumCamModel
 from package_postprocessing_tools.module_cubemap_enum import EnumTargetType
@@ -57,7 +58,6 @@ def main(args):
         subdir = 'default'
         if cam_model == EnumCamModel['ERP']:
             subdir = 'erp'
-            continue
         elif cam_model == EnumCamModel['FISHEYE']:
             subdir = f'fisheye{target_fov}_new'
         elif cam_model == EnumCamModel['PINHOLE']:
@@ -74,7 +74,7 @@ def main(args):
             parameter_target_model=cam_model,
             parameter_target_type=target_type,
         )
-        post_dataloader = DataLoader(dataset=post_dataset, batch_size=args.batch_size, num_workers=args.num_workers)
+        post_dataloader = DataLoader(dataset=post_dataset, batch_size=args.batch_size, num_workers=args.num_workers, drop_last=True)
         
         device = 'cpu'
         if args.gpu is not None:
@@ -101,6 +101,9 @@ def main(args):
                 raw_data = results[i].cpu().numpy()
                 if target_type == EnumTargetType['DEPTH']:
                     np.savez(os.path.join(save_dir,item['save_name'][i]), raw_data)
+                    color_depth = vis_depth(raw_data.squeeze(0))
+                    vis_save_name = item['save_name'][i][0:-4]+'.jpg'
+                    color_depth.save(os.path.join(save_dir,vis_save_name))
                 elif target_type == EnumTargetType['RGB']:
                     img = raw_data.astype(np.uint8)
                     img = img.transpose(1, 2, 0)

@@ -76,15 +76,15 @@ class ClassCubemapProcesser(object):
         
         elif self.local_val_target_model == EnumCamModel['ERP']: # erp model
             local_val_unit = np.pi / self.local_val_target_height
-            local_val_theta = local_val_back_Y * local_val_unit
-            local_val_phi =  local_val_back_Z * local_val_unit
+            local_val_theta = local_val_Y * local_val_unit
+            local_val_phi =  local_val_Z * local_val_unit
             local_val_temp_z = np.sin(local_val_phi)
             local_val_temp_x = np.cos(local_val_phi) * np.cos(local_val_theta)
             local_val_temp_y = np.cos(local_val_phi) * np.sin(local_val_theta)
             local_val_r = np.sqrt(local_val_temp_x**2+local_val_temp_y**2+local_val_temp_z**2)
             local_val_alpha = np.arccos(local_val_temp_x/local_val_r)
             local_val_beta = np.arctan2(local_val_temp_z, local_val_temp_y)
-            local_val_invalid_mask = np.array(np.ones_like(local_val_alpha), dtype=np.bool8)
+            local_val_invalid_mask = np.array(np.zeros_like(local_val_alpha), dtype=np.bool8)
         
         # transforms 
         if self.local_val_rot_matrix is not None:

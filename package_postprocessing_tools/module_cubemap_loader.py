@@ -51,23 +51,23 @@ class ClassCubemapDataset(Dataset):
             local_val_cube_view = torch.from_numpy(local_val_cube_view)
             local_val_cube_view.requires_grad = False
             local_val_cube_view = local_val_cube_view.float() # dtype force to float32
-            # convert rgb to depth
             if self.local_val_type == EnumTargetType['DEPTH']:
-                normalized = (local_val_cube_view[0:1,2:3,:,:] + local_val_cube_view[0:1,1:2,:,:] * 256 + local_val_cube_view[0:1,0:1,:,:] * 256 * 256) / (256 * 256 * 256 - 1)
+                # convert bgr to depth
+                normalized = (local_val_cube_view[2:3,:,:] + local_val_cube_view[1:2,:,:] * 256 + local_val_cube_view[0:1,:,:] * 256 * 256) / (256 * 256 * 256 - 1)
                 in_meters = 1000 * normalized
-                _, _, H, W = in_meters
-                local_val_grids_h, local_val_grids_w = torch.meshgrid(torch.arange(H),torch.arange(W))
+                _, H, W = in_meters.shape
+                local_val_grids_w, local_val_grids_h = torch.meshgrid(torch.arange(W),torch.arange(H),  indexing = 'xy')
                 local_val_grids_h = local_val_grids_h.float()
                 local_val_grids_w = local_val_grids_w.float()
-                local_val_grids_center = (local_val_grids_w - 1) / 2
+                local_val_grids_center = (W - 1) / 2
                 local_val_grids_h = local_val_grids_h - local_val_grids_center
                 local_val_grids_w = local_val_grids_w - local_val_grids_center
                 local_val_cube_f =  torch.tensor(W / 2, dtype=torch.float32) # cube must satisfy: H=W, fov=90
                 local_val_grids_r = torch.sqrt(local_val_grids_h**2+local_val_grids_w**2+local_val_cube_f**2) # H*W
-                local_val_factor = (local_val_grids_r/local_val_cube_f).unsqueeze(0).unsqueeze(0) # 1*1*H*W
-                local_val_cube[local_val_view] = local_val_factor * in_meters # real depth
+                local_val_factor = (local_val_grids_r/local_val_cube_f).unsqueeze(0) # 1*H*W
+                local_val_cube[local_val_view] = torch.multiply(local_val_factor,in_meters) # real depth
             else:
-                local_val_cube[local_val_view] = local_val_cube_view # 1*C*H*W
+                local_val_cube[local_val_view] = local_val_cube_view # C*H*W
         return {'save_name':local_val_save_name, 
                 'cube':local_val_cube}
     
