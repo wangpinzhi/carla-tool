@@ -108,14 +108,14 @@ class ClassSimulatorManager(object):
             self.local_val_world_settings = self.local_val_client.get_world().get_settings()
 
             # We set CARLA syncronous mode
-            self.local_val_world_settings.fixed_delta_seconds = 0.05
+            self.local_val_world_settings.fixed_delta_seconds = 0.08
             self.local_val_world_settings.synchronous_mode = True
             self.local_val_client.get_world().apply_settings(self.local_val_world_settings)
 
             global_var_vehicle_manager.function_init_vehicles(self.local_val_client)  # init vehicles state
 
             # skip frames that do not need saving
-            print('\033[1;35m Sikpping Unused Frames\033[0m')
+            print('\033[1;35m Sikp Unused Frames\033[0m')
             while local_val_counter < local_val_frame_start:
                 global_var_vehicle_manager.function_flush_vehicles(self.local_val_client) # flush
                 self.local_val_client.get_world().tick()
@@ -170,7 +170,7 @@ class ClassSimulatorManager(object):
             
 
     def function_start_sim_collect(self,
-                                   parameter_split_num: int = 3):
+                                   parameter_split_num: int = 4):
         
         local_val_sensor_configs = function_get_sensor_json_list(self.local_val_sensor_config_path)
         

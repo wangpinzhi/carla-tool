@@ -283,8 +283,8 @@ class World(object):
                 sys.exit(1)
             # spawn_points = self.map.get_spawn_points()
             # spawn_point = random.choice(spawn_points) if spawn_points else carla.Transform()
-            spawn_point = carla.Transform(carla.Location(34.30, 13.00, 200.0))
-            self.player = self.world.try_spawn_actor(blueprint, spawn_point)
+            spawn_point = carla.Transform(carla.Location(0.1, 0.2, 2.0))
+            self.player = self.world.spawn_actor(blueprint, spawn_point)
             self.show_vehicle_telemetry = False
             self.modify_vehicle_physics(self.player)
         # Set up the sensors.

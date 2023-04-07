@@ -63,7 +63,7 @@ def main(args):
         elif cam_model == EnumCamModel['PINHOLE']:
             subdir = f'pinhole_new'
          
-        if 'rotation' in sensor.keys():
+        if 'rotation' in sensor['post_process'].keys():
             rot = sensor['post_process']['rotation']
             target_rot = R.from_euler(seq=rot['seq'], angles=rot['angles'], degrees=rot['degrees'])
             target_rot = target_rot.as_matrix().astype(np.float32)
