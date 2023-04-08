@@ -125,6 +125,7 @@ The relevant status of this parameter is currently under development, please set
 ## 4.1 save setting
 
 This keyword can control the start and end positions of the collection frame count.
+Skip Frames [0, "frame_start")
 
 ```json
 "save_setting": {
