@@ -7,5 +7,5 @@ python tools/cubemap2erp.py     --external_path "%ROOT_PATH%/external.txt"^
                                 --format "npz"^
                                 --cubemap_dir "%ROOT_PATH%/cubemap"^
                                 --output_dir "%ROOT_PATH%/erp"^
-                                --camera "cm_depth11"^
+                                --camera "cm_rgb0"^
                                 --use_cuda

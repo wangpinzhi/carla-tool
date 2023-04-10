@@ -69,7 +69,7 @@ if __name__ == '__main__':
                 if args.format == 'npz':
                     raw = np.load(f"{args.cubemap_dir}/{args.camera}_{view}_{frame}.{args.format}")['arr_0']
                     # print(raw)
-                    # raw = cv2.imread(glob.glob(f"{args.cubemap_dir}/{args.camera}_{view}_{frame}.png")[0],-1)
+                    # raw = cv2.imread(glob.glob(f"{args.cubemap_dir}/{args.camera}_{view}_{frame}.jpg")[0],-1)
                 raw = cv2.cvtColor(raw, cv2.COLOR_BGRA2RGB)
                 raw = raw.astype(np.float64)
                 raw = np.transpose(raw,(2,0,1))
@@ -95,12 +95,12 @@ if __name__ == '__main__':
 
             cube = np.zeros([6,3,args.cubeW,args.cubeW], dtype=np.float64)
 
-            cube[0,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_back_{frame}.png"),(2,0,1))
-            cube[1,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_down_{frame}.png"),(2,0,1))
-            cube[2,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_front_{frame}.png"),(2,0,1))
-            cube[3,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_left_{frame}.png"),(2,0,1))
-            cube[4,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_right_{frame}.png"),(2,0,1))
-            cube[5,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_up_{frame}.png"),(2,0,1))
+            cube[0,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_back_{frame}.jpg"),(2,0,1))
+            cube[1,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_down_{frame}.jpg"),(2,0,1))
+            cube[2,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_front_{frame}.jpg"),(2,0,1))
+            cube[3,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_left_{frame}.jpg"),(2,0,1))
+            cube[4,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_right_{frame}.jpg"),(2,0,1))
+            cube[5,:,:,:]=np.transpose(cv2.imread(f"{args.cubemap_dir}/cm_{cam}_up_{frame}.jpg"),(2,0,1))
             
             cube_tensor=torch.from_numpy(cube)
             out_batch = cubemap2erp.ToEquirecTensor(cube_tensor)
