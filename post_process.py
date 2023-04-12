@@ -74,7 +74,7 @@ def main(args):
             parameter_target_model=cam_model,
             parameter_target_type=target_type,
         )
-        post_dataloader = DataLoader(dataset=post_dataset, batch_size=args.batch_size, num_workers=args.num_workers, drop_last=True)
+        post_dataloader = DataLoader(dataset=post_dataset, batch_size=args.batch_size, num_workers=args.num_workers, drop_last=False)
         
         device = 'cpu'
         if args.gpu is not None:
@@ -97,7 +97,7 @@ def main(args):
 
         for item in tqdm(post_dataloader):
             results = post_processer.trans(item['cube'], cube_order)
-            for i in range(args.batch_size):
+            for i in range(len(item['save_name'])):
                 raw_data = results[i].cpu().numpy()
                 if target_type == EnumTargetType['DEPTH']:
                     np.savez(os.path.join(save_dir,item['save_name'][i]), raw_data)

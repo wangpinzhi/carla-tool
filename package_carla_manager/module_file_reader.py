@@ -1,4 +1,5 @@
 import json
+import os
 
 
 def function_get_map_json(parameter_file_path: str) -> dict:
@@ -39,6 +40,11 @@ def function_get_vehicle_json_list(parameter_file_path: str) -> list:
     """
     with open(parameter_file_path) as f:
         local_val_vehicles = json.load(f)['vehicles']
+        # convert rel path to abs path
+        for local_val_vehicle in local_val_vehicles:
+            if 'drive_file' in local_val_vehicle.keys():
+                local_val_vehicle['drive_file'] = os.path.join(os.path.dirname(parameter_file_path),
+                                                               local_val_vehicle['drive_file'])
     return local_val_vehicles
 
 def function_get_sepctator_json(parameter_file_path: str) -> dict:

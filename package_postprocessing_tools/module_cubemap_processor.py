@@ -97,7 +97,7 @@ class ClassCubemapProcesser(object):
         local_val_front_Y[local_val_front_mask] = -2.
         local_val_front_Z[local_val_front_mask] = -2.
         local_val_front_grid = np.dstack((local_val_front_Y, local_val_front_Z))
-        local_val_front_grid = np.expand_dims(local_val_front_grid, axis=0).repeat(self.local_val_batchsize, axis=0)
+        local_val_front_grid = np.expand_dims(local_val_front_grid, axis=0)
         local_val_target_grids['front_data'] = torch.from_numpy(local_val_front_grid).to(self.local_val_device)
         local_val_target_grids['front_data'].requires_grad = False
 
@@ -109,7 +109,7 @@ class ClassCubemapProcesser(object):
         local_val_left_Z[local_val_left_mask] = -2.
         local_val_left_X[local_val_left_mask] = -2.
         local_val_left_grid = np.dstack((local_val_left_X, local_val_left_Z))
-        local_val_left_grid = np.expand_dims(local_val_left_grid, axis=0).repeat(self.local_val_batchsize, axis=0)
+        local_val_left_grid = np.expand_dims(local_val_left_grid, axis=0)
         local_val_target_grids['left_data'] = torch.from_numpy(local_val_left_grid).to(self.local_val_device)
         local_val_target_grids['left_data'].requires_grad = False
 
@@ -120,7 +120,7 @@ class ClassCubemapProcesser(object):
         local_val_back_Y[local_val_back_mask] = -2.
         local_val_back_Z[local_val_back_mask] = -2.
         local_val_back_grid = np.dstack((local_val_back_Y, local_val_back_Z))
-        local_val_back_grid = np.expand_dims(local_val_back_grid, axis=0).repeat(self.local_val_batchsize, axis=0)
+        local_val_back_grid = np.expand_dims(local_val_back_grid, axis=0)
         local_val_target_grids['back_data'] = torch.from_numpy(local_val_back_grid).to(self.local_val_device)
         local_val_target_grids['back_data'].requires_grad = False
 
@@ -132,7 +132,7 @@ class ClassCubemapProcesser(object):
         local_val_right_Z[local_val_right_mask] = -2.
         local_val_right_X[local_val_right_mask] = -2.
         local_val_right_grid = np.dstack((local_val_right_X, local_val_right_Z))
-        local_val_right_grid = np.expand_dims(local_val_right_grid, axis=0).repeat(self.local_val_batchsize, axis=0)
+        local_val_right_grid = np.expand_dims(local_val_right_grid, axis=0)
         local_val_target_grids['right_data'] = torch.from_numpy(local_val_right_grid).to(self.local_val_device)
         local_val_target_grids['right_data'].requires_grad = False
 
@@ -144,7 +144,7 @@ class ClassCubemapProcesser(object):
         local_val_up_X[local_val_up_mask] = -2.
         local_val_up_Y[local_val_up_mask] = -2.
         local_val_up_grid =  np.dstack((local_val_up_Y, local_val_up_X))
-        local_val_up_grid = np.expand_dims(local_val_up_grid, axis=0).repeat(self.local_val_batchsize, axis=0)
+        local_val_up_grid = np.expand_dims(local_val_up_grid, axis=0)
         local_val_target_grids['up_data'] = torch.from_numpy(local_val_up_grid).to(self.local_val_device)
         local_val_target_grids['up_data'].requires_grad = False
         
@@ -156,7 +156,7 @@ class ClassCubemapProcesser(object):
         local_val_down_X[local_val_down_mask] = -2.
         local_val_down_Y[local_val_down_mask] = -2.
         local_val_down_grid = np.dstack((local_val_down_Y, local_val_down_X))
-        local_val_down_grid = np.expand_dims(local_val_down_grid, axis=0).repeat(self.local_val_batchsize, axis=0)
+        local_val_down_grid = np.expand_dims(local_val_down_grid, axis=0)
         local_val_target_grids['down_data'] = torch.from_numpy(local_val_down_grid).to(self.local_val_device)
         local_val_target_grids['down_data'].requires_grad = False
 
@@ -168,8 +168,10 @@ class ClassCubemapProcesser(object):
         
         local_val_target = None
         for local_val_view in parameter_order:
-            local_val_temp = F.grid_sample(input = parameter_cube[local_val_view].to(self.local_val_device), 
-                                           grid = self.local_val_grids[local_val_view], 
+            input_cube = parameter_cube[local_val_view].to(self.local_val_device)
+            N, _, _, _ = input_cube.shape
+            local_val_temp = F.grid_sample(input = input_cube, 
+                                           grid = self.local_val_grids[local_val_view].repeat(N, 1, 1, 1), 
                                            mode='bilinear', padding_mode='zeros', align_corners=False)
             if local_val_target is None:
                 local_val_target = local_val_temp

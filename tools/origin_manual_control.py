@@ -277,14 +277,18 @@ class World(object):
             self.show_vehicle_telemetry = False
             self.modify_vehicle_physics(self.player)
         while self.player is None:
+            print('try spawn actor')
             if not self.map.get_spawn_points():
                 print('There are no spawn points available in your map/town.')
                 print('Please add some Vehicle Spawn Point to your UE4 scene.')
                 sys.exit(1)
-            # spawn_points = self.map.get_spawn_points()
-            # spawn_point = random.choice(spawn_points) if spawn_points else carla.Transform()
-            spawn_point = carla.Transform(carla.Location(0.1, 0.2, 2.0))
-            self.player = self.world.spawn_actor(blueprint, spawn_point)
+            spawn_points = self.map.get_spawn_points()
+            spawn_point = random.choice(spawn_points) if spawn_points else carla.Transform()
+            # spawn_point = carla.Transform(carla.Location(46.90, -173.40, 3.2))
+            self.player = self.world.try_spawn_actor(blueprint, spawn_point)
+            if self.player is None:
+                print('spawn actor fails')
+                return
             self.show_vehicle_telemetry = False
             self.modify_vehicle_physics(self.player)
         # Set up the sensors.
@@ -382,7 +386,7 @@ class KeyboardControl(object):
         self._ackermann_enabled = False
         self._ackermann_reverse = 1
         self._controls_dic = None
-        self._controls_np = None
+        self.controls_np = None
         self._replay_controls_dic = None
         self._replay_controls_np = None
         self._replay_count = 0
@@ -504,7 +508,7 @@ class KeyboardControl(object):
                                 with open('control_test.json', 'r+', encoding='utf-8') as p:
                                     self._controls_dic = json.load(p)
                                 if os.path.exists(f'control_test_id_{world.player.id}.npy'):
-                                    self._controls_np = np.load(f'control_test_id_{world.player.id}.npy')
+                                    self.controls_np = np.load(f'control_test_id_{world.player.id}.npy')
                             world.recording_enabled = True
                             world.hud.notification("Recorder is ON")
                         else:
@@ -533,7 +537,9 @@ class KeyboardControl(object):
                                 world.hud.notification('start replaying')
                             else:
                                 world.hud.notification('there is no control_test.json')
-
+                elif event.key == K_x and (pygame.key.get_mods() & KMOD_CTRL):
+                    self.controls_np = None
+                    world.hud.notification('Clean vehicle control saving')
                 elif event.key == K_MINUS and (pygame.key.get_mods() & KMOD_CTRL):
                     if pygame.key.get_mods() & KMOD_SHIFT:
                         world.recording_start -= 10
@@ -635,27 +641,23 @@ class KeyboardControl(object):
                 world.player.apply_control(self._control)
 
         if world.recording_enabled:
-            control_np = np.array([self._control.throttle, self._control.steer, self._control.brake,
-                                  self._control.hand_brake, self._control.reverse, self._control.manual_gear_shift,
-                                  self._control.gear])
+            
             if self._controls_dic is None:
                 transform = world.player.get_transform()
                 self._controls_dic = {
                     world.player.id: [transform.location.x, transform.location.y, transform.location.z,
                                       transform.rotation.pitch, transform.rotation.yaw, transform.rotation.roll]}
-                self._controls_np = control_np
+                
             elif world.player.id not in self._controls_dic:
                 transform = world.player.get_transform()
                 self._controls_dic.update({
                     world.player.id: [transform.location.x, transform.location.y, transform.location.z,
                                       transform.rotation.pitch, transform.rotation.yaw, transform.rotation.roll]})
-                self._controls_np = control_np
-            else:
-                self._controls_np = np.vstack([self._controls_np, control_np])
+            
         elif world.recording_save:
             with open('control_test.json', 'w+', encoding='utf-8') as p:
                 json.dump(self._controls_dic, p)
-            np.save(f'control_test_id_{world.player.id}.npy', self._controls_np)
+            np.save(f'control_test_id_{world.player.id}.npy', self.controls_np)
 
         if world.replaying_enabled:
             if self._replay_count == 0:
@@ -1387,6 +1389,15 @@ def game_loop(args):
         clock = pygame.time.Clock()
         while True:
             if args.sync:
+                if world.recording_enabled:
+                    player_control = world.player.get_control()
+                    control_np = np.array([player_control.throttle, player_control.steer, player_control.brake,
+                                    player_control.hand_brake, player_control.reverse, player_control.manual_gear_shift,
+                                    player_control.gear])
+                    if controller.controls_np is None:
+                        controller.controls_np = control_np
+                    else:
+                        controller.controls_np = np.vstack([controller.controls_np, control_np])
                 sim_world.tick()
             clock.tick_busy_loop(60)
             if controller.parse_events(client, world, clock, args.sync):

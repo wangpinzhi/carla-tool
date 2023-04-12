@@ -13,15 +13,9 @@ from .module_vehicle_manager import instance_var_vehicle_manager as global_var_v
 from .module_spectator_manager import instance_var_spectator_manager as global_var_spectator_manager
 
 from .module_signal_control import function_get_global_signal
+from .module_sensor_enum import EnumAttachType 
 
 __all__ = ['instance_var_sensor_manager']
-
-GLOBAL_CONSTANT_SENSOR_TYPE_CUBE = 0
-GLOBAL_CONSTANT_SENSOR_TYPE_NORMAL = 1
-
-GLOBAL_CONSTANT_ATTACH_TYPE_SPECTATOR = 0
-GLOBAL_CONSTANT_ATTACH_TYPE_VEHICLE = 1
-GLOBAL_CONSTANT_ATTACH_TYPE_WALKER = 2 
 
 class ClassSensorUnit(Thread):
     def __init__(self,
@@ -290,10 +284,10 @@ class ClassSensorManager(object):
             local_val_blueprint.set_attribute('sensor_tick', '0.0')
 
         # attach actor
-        if parameter_sensor_config['attach_type'] == GLOBAL_CONSTANT_ATTACH_TYPE_VEHICLE:
+        if parameter_sensor_config['attach_type'] == EnumAttachType.VEHICLE:
             local_val_attach = global_var_vehicle_manager.function_get_vehicle_by_role_name(
                 parameter_sensor_config['attach_name'])
-        elif parameter_sensor_config['attach_type'] == GLOBAL_CONSTANT_ATTACH_TYPE_SPECTATOR:
+        elif parameter_sensor_config['attach_type'] == EnumAttachType.SPECTATOR:
             local_val_attach = global_var_spectator_manager.function_get_spectator()
 
         # attach spawn point transform
