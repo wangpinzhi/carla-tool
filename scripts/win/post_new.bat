@@ -8,14 +8,14 @@ echo "VERSION is %VERSION%"
 echo "SCENE is %SCENE%"
 
 if "%VERSION%" == "huawei" (
-    call scripts\win\huawei_post_data_new\post_data_p1.bat output/%VERSION%_%SCENE%
-    call scripts\win\huawei_post_data_new\post_data_p2.bat output/%VERSION%_%SCENE%
-    call scripts\win\huawei_post_data_new\post_data_p3.bat output/%VERSION%_%SCENE%
-    call scripts\win\huawei_post_data_new\post_data_p4.bat output/%VERSION%_%SCENE%
+    start scripts\win\huawei_post_data_new\post_data_p1.bat output/%VERSION%_%SCENE%
+    start /WAIT scripts\win\huawei_post_data_new\post_data_p2.bat output/%VERSION%_%SCENE%
+    start scripts\win\huawei_post_data_new\post_data_p3.bat output/%VERSION%_%SCENE%
+    start /WAIT scripts\win\huawei_post_data_new\post_data_p4.bat output/%VERSION%_%SCENE%
 )
 
 if "%VERSION%" == "nju" (
-    call scripts\win\nju_post_data\post_data_p1.bat output/%VERSION%_%SCENE%
-    call scripts\win\nju_post_data\post_data_p2.bat output/%VERSION%_%SCENE%
-    call scripts\win\nju_post_data\post_data_p3.bat output/%VERSION%_%SCENE%
+    start scripts\win\nju_post_data\post_data_p1.bat output/%VERSION%_%SCENE%
+    start scripts\win\nju_post_data\post_data_p2.bat output/%VERSION%_%SCENE%
+    start scripts\win\nju_post_data\post_data_p3.bat output/%VERSION%_%SCENE%
 )
