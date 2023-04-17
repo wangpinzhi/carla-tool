@@ -35,6 +35,7 @@ Use ARROWS or WASD keys for control.
     G            : toggle radar visualization
     C            : change weather (Shift+C reverse)
     Backspace    : change vehicle
+    Ctrl + Backspace : change vehicle and keep previous vehicle
 
     O            : open/close all doors of vehicle
     T            : toggle vehicle's telemetry
@@ -44,10 +45,9 @@ Use ARROWS or WASD keys for control.
 
     R            : toggle recording images to disk
 
-    CTRL + R     : toggle recording of simulation (replacing any previous)
+    CTRL + R     : toggle recording of simulation
     CTRL + P     : start replaying last recorded simulation
-    CTRL + +     : increments the start time of the replay by 1 second (+SHIFT = 10 seconds)
-    CTRL + -     : decrements the start time of the replay by 1 second (+SHIFT = 10 seconds)
+    CTRL + T     : switch the mode of replaying
 
     F1           : toggle HUD
     H/?          : toggle help
@@ -92,6 +92,7 @@ import math
 import random
 import re
 import weakref
+import cv2
 
 try:
     import pygame
@@ -284,7 +285,7 @@ class World(object):
                 sys.exit(1)
             # spawn_points = self.map.get_spawn_points()
             # spawn_point = random.choice(spawn_points) if spawn_points else carla.Transform()
-            spawn_point = carla.Transform(carla.Location(-60.2,179.80,0.5), carla.Rotation(0,0,0))
+            spawn_point = carla.Transform(carla.Location(1.8,137.4,1), carla.Rotation(0,0,0))
             self.player = self.world.try_spawn_actor(blueprint, spawn_point)
             self.show_vehicle_telemetry = False
             self.modify_vehicle_physics(self.player)
@@ -1253,7 +1254,7 @@ class CameraManager(object):
                 (carla.Transform(carla.Location(x=-2.0*bound_x, y=+0.0*bound_y, z=2.0*bound_z), carla.Rotation(pitch=8.0)), Attachment.SpringArmGhost),
                 (carla.Transform(carla.Location(x=+0.8*bound_x, y=+0.0*bound_y, z=1.3*bound_z)), Attachment.Rigid),
                 (carla.Transform(carla.Location(x=+1.9*bound_x, y=+1.0*bound_y, z=1.2*bound_z)), Attachment.SpringArmGhost),
-                (carla.Transform(carla.Location(x=-2.8*bound_x, y=+0.0*bound_y, z=4.6*bound_z), carla.Rotation(pitch=6.0)), Attachment.SpringArmGhost),
+                (carla.Transform(carla.Location(x=15*bound_x, y=+0.0*bound_y, z=7*bound_z), carla.Rotation(pitch=-6.5)), Attachment.SpringArmGhost),
                 (carla.Transform(carla.Location(x=-1.0, y=-1.0*bound_y, z=0.4*bound_z)), Attachment.Rigid)]
         else:
             self._camera_transforms = [
@@ -1335,7 +1336,8 @@ class CameraManager(object):
 
     def toggle_recording(self):
         self.recording = not self.recording
-        self.hud.notification('Recording %s' % ('On' if self.recording else 'Off'))
+        # self.hud.notification('Recording %s' % ('On' if self.recording else 'Off'))
+        self.hud.notification('Record Once')
 
     def render(self, display):
         if self.surface is not None:
@@ -1380,10 +1382,21 @@ class CameraManager(object):
             array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
             array = np.reshape(array, (image.height, image.width, 4))
             array = array[:, :, :3]
-            array = array[:, :, ::-1]
+            array = array[:, :, ::-1] 
             self.surface = pygame.surfarray.make_surface(array.swapaxes(0, 1))
         if self.recording:
             image.save_to_disk('_out/%08d' % image.frame)
+            self.recording = not self.recording
+            if self.index == 1:
+                array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
+                array = np.reshape(array, (image.height, image.width, 4))
+                array = array[:, :, :3]
+                array = array[:, :, ::-1]
+                with open(os.path.join('_out', 'temp{}.json'.format(image.frame)), 'w+', encoding='utf-8') as p:
+                    json.dump(array.tolist(), p)
+                output = (array[:, :, 0] + 256*array[:, :, 1] + 256*256*array[:, :, 2]) * 1000 / (256*256*256)
+                with open(os.path.join('_out', 'output{}.json'.format(image.frame)), 'w+', encoding='utf-8') as p:
+                    json.dump(output.tolist(), p)
 
 
 # ==============================================================================
