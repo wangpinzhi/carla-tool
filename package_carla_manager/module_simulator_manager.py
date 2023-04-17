@@ -15,7 +15,7 @@ from .module_map_control import function_set_map
 from .module_weather_control import function_set_weather
 
 # import global vehicle manager to control vehicles
-from .module_vehicle_manager import instance_var_vehicle_manager as global_var_vehicle_manager
+from .package_vehicle import instance_var_vehicle_manager as global_var_vehicle_manager
 
 # import global sensor manager to control sensors
 from .module_sensor_manager import instance_var_sensor_manager as global_val_sensor_manager
@@ -87,6 +87,7 @@ class ClassSimulatorManager(object):
                                parameter_sensor_config):
         local_val_counter = 0
         try:
+
             # get save setting
             local_val_save_config = function_get_save_json(self.local_val_sensor_config_path)
             local_val_frame_start = local_val_save_config['frame_start']

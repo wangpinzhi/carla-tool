@@ -6,7 +6,7 @@ class ENumSensorType(IntEnum):
     NORMAL = 1
 
 @unique
-class EnumAttachType(IntEnum):
+class ENumAttachType(IntEnum):
      SPECTATOR = 0
      VEHICLE = 1
      WALKER = 2

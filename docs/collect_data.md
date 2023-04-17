@@ -141,33 +141,6 @@ Skip Frames [0, "frame_start")
 The sensors in the scene are controlled by the "sensor_manager", and before the next frame of world operation in the simulator, the "sensor_manager" will collect raw data according to the settings in the "JSON" configuration file. The collected cubemap images can be converted into pinhole, fisheye, ERP projection images, etc. in the post-processing step, or pinhole images can be directly collected, and all cameras can collect depth images.
 
 ```json
-```
-
-* name_id
-  * sensor_name: {cm/ph}_{rgb/depth}{number_id} (cm->cubemap, ph->pinhole)
-* attacth_type
-
-  ```python
-  class EnumAttachType(IntEnum):
-      SPECTATOR = 0
-      VEHICLE = 1 # Use this often
-      WALKER = 2 # not implement yet
-  ```
-
-* attach_name
-  * Valid only when **attach_type==EnumAttachType.VEHICLE**, corresponding to [**role_name in 3.3**](#33-vehicle-config)
-
-* transform
-  * A coordinate system (left-handed coordinate system) originating from the object being attached.
-  * Refer to [carla transform](https://carla.readthedocs.io/en/latest/python_api/#carlatransform).
-
-* image_size
-  * When using a cubemap camera, the width and height of the image must be the same, and the FOV must be 90°.
-
-* post_process
-  * This field is only valid in cubemap cameras, refer to [post-process_data.md](./post-process_data.md).
-
-```json
 "sensors": [
     {
       "name_id" : "cm_depth0",
@@ -199,3 +172,28 @@ The sensors in the scene are controlled by the "sensor_manager", and before the 
     }
   ]
 ```
+
+* name_id
+  * sensor_name: {cm/ph}_{rgb/depth}{number_id} (cm->cubemap, ph->pinhole)
+* attacth_type
+
+  ```python
+  class EnumAttachType(IntEnum):
+      SPECTATOR = 0
+      VEHICLE = 1 # Use this often
+      WALKER = 2 # not implement yet
+  ```
+
+* attach_name
+  * Valid only when **attach_type==EnumAttachType.VEHICLE**, corresponding to [**role_name in 3.3**](#33-vehicle-config)
+
+* transform
+  * A coordinate system (left-handed coordinate system) originating from the object being attached.
+  * Refer to [carla transform](https://carla.readthedocs.io/en/latest/python_api/#carlatransform).
+
+* image_size
+  * When using a cubemap camera, the width and height of the image must be the same, and the FOV must be 90°.
+
+* post_process
+  * This field is only valid in cubemap cameras, refer to [post-process_data.md](./post-process_data.md).
+

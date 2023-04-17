@@ -1,0 +1,2 @@
+from .module_vehicle_enum import ENumDriveType
+from .module_vehicle_manager import instance_var_vehicle_manager

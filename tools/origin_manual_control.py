@@ -240,7 +240,7 @@ class World(object):
         ]
 
     def restart(self, keep=False):
-        self.player_max_speed = 1.589
+        self.player_max_speed = 1.389
         self.player_max_speed_fast = 3.713
         # Keep same camera config if the camera manager exists.
         cam_index = self.camera_manager.index if self.camera_manager is not None else 0
@@ -1387,26 +1387,40 @@ def game_loop(args):
             sim_world.wait_for_tick()
 
         clock = pygame.time.Clock()
+        transforms_np = None
         while True:
-            if args.sync:
-                if world.recording_enabled:
-                    player_control = world.player.get_control()
-                    control_np = np.array([player_control.throttle, player_control.steer, player_control.brake,
-                                    player_control.hand_brake, player_control.reverse, player_control.manual_gear_shift,
-                                    player_control.gear])
-                    if controller.controls_np is None:
-                        controller.controls_np = control_np
-                    else:
-                        controller.controls_np = np.vstack([controller.controls_np, control_np])
-                sim_world.tick()
-            clock.tick_busy_loop(60)
+            clock.tick_busy_loop(20)
             if controller.parse_events(client, world, clock, args.sync):
                 return
             world.tick(clock)
             world.render(display)
             pygame.display.flip()
 
+            if args.sync:
+                if world.recording_enabled:
+                    player_control = world.player.get_control()
+                    player_transform = world.player.get_transform()
+                    control_np = np.array([player_control.throttle, player_control.steer, player_control.brake,
+                                    player_control.hand_brake, player_control.reverse, player_control.manual_gear_shift,
+                                    player_control.gear, world.player.get_light_state()], dtype=np.float32)
+                    transform_np = np.array([player_transform.location.x, player_transform.location.y, player_transform.location.z,
+                                             player_transform.rotation.pitch, player_transform.rotation.yaw, player_transform.rotation.pitch,
+                                             world.player.get_light_state()], dtype=np.float32)
+                    
+                    if transforms_np is None:
+                        transforms_np = transform_np
+                    else:
+                        transforms_np = np.vstack([transforms_np, transform_np])
+                    if controller.controls_np is None:
+                        controller.controls_np = control_np
+                    else:
+                        controller.controls_np = np.vstack([controller.controls_np, control_np])
+                    
+                sim_world.tick()
+
     finally:
+        if transforms_np is not None:
+            np.save(f'{world.player.id}_transforms.npy',transforms_np)
 
         if original_settings:
             sim_world.apply_settings(original_settings)
@@ -1416,6 +1430,8 @@ def game_loop(args):
 
         if world is not None:
             world.destroy()
+        
+        
 
         pygame.quit()
 
@@ -1451,7 +1467,7 @@ def main():
     argparser.add_argument(
         '--res',
         metavar='WIDTHxHEIGHT',
-        default='640x480',
+        default='1280x720',
         help='window resolution (default: 1280x720)')
     argparser.add_argument(
         '--filter',

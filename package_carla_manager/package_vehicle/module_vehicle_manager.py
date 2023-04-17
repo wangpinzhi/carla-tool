@@ -3,15 +3,11 @@ import carla
 import numpy as np
 import gc
 
+from .module_vehicle_enum import ENumDriveType
+
 __all__ = [
     'instance_var_vehicle_manager'
 ]
-
-GLOBAL_CONSTANT_DRIVE_TYPE_STATIC = 0
-GLOBAL_CONSTANT_DRIVE_TYPE_AUTOPILOT = 1
-GLOBAL_CONSTANT_DRIVE_TYPE_FILE_CONTROL_STEER = 2
-GLOBAL_CONSTANT_DRIVE_TYPE_FILE_CONTROL_ALL = 3
-
 
 class ClassVehicleUnit(object):
 
@@ -34,26 +30,51 @@ class ClassVehicleUnit(object):
     def function_get_actor(self):
         return self.__local_val_actor
 
-    def _function_get_ctrl(self) -> carla.VehicleControl:
+    def _funticon_get_transform(self):
+        # check ctrl array
+        assert self.__local_val_ctrl_counter < len(self.__local_val_ctrl_array)
+        
+        # flush the transform
+        local_current_transform = self.__local_val_actor.get_transform()
+        local_current_light = 0
+        if len(self.__local_val_ctrl_array[self.__local_val_ctrl_counter]==7):
+            local_current_light = int(self.__local_val_ctrl_array[self.__local_val_ctrl_counter][6])
+
+        local_current_transform.location.x = float(self.__local_val_ctrl_array[self.__local_val_ctrl_counter][0])
+        local_current_transform.location.y = float(self.__local_val_ctrl_array[self.__local_val_ctrl_counter][1])
+        local_current_transform.location.z = float(self.__local_val_ctrl_array[self.__local_val_ctrl_counter][2])
+        local_current_transform.rotation.pitch = float(self.__local_val_ctrl_array[self.__local_val_ctrl_counter][3])
+        local_current_transform.rotation.yaw = float(self.__local_val_ctrl_array[self.__local_val_ctrl_counter][4])
+        local_current_transform.rotation.roll = float(self.__local_val_ctrl_array[self.__local_val_ctrl_counter][5])
+
+        # flush the counter
+        self.__local_val_ctrl_counter = self.__local_val_ctrl_counter + 1
+
+        # if file control ends, change type to static.
+        if self.__local_val_ctrl_counter >= len(self.__local_val_ctrl_array):
+            self.__local_val_ctrl_type = ENumDriveType.STATIC
+        
+        return local_current_transform, local_current_light
+
+    def _function_get_ctrl(self):
         """
         When drive type is file_control, this function returns the carla.VehicleControl needed to be applied.
         And auto flush the counter.
 
         :return: VehicleControl needed to be applied by client.
         """
-        # check drive type, it must be FILE_CONTROL_STEER or FILE_CONTROL_ALL.
-        assert self.__local_val_ctrl_type in [GLOBAL_CONSTANT_DRIVE_TYPE_FILE_CONTROL_STEER,
-                                              GLOBAL_CONSTANT_DRIVE_TYPE_FILE_CONTROL_ALL]
 
         # check ctrl array
         assert self.__local_val_ctrl_counter < len(self.__local_val_ctrl_array)
 
         # flush the control
         local_current_ctrl = self.__local_val_actor.get_control()
-        constraints = [GLOBAL_CONSTANT_DRIVE_TYPE_FILE_CONTROL_STEER,
-                       GLOBAL_CONSTANT_DRIVE_TYPE_FILE_CONTROL_ALL]
-        if self.__local_val_ctrl_type in constraints:  # Only affect steer
+        local_current_light = 0
+        if len(self.__local_val_ctrl_array[self.__local_val_ctrl_counter]==8):
+            local_current_light = int(self.__local_val_ctrl_array[self.__local_val_ctrl_counter][7])
+        if self.__local_val_ctrl_type == ENumDriveType.FILE_CONTROL_STEER:  # Only affect steer
             local_current_ctrl.steer = float(self.__local_val_ctrl_array[self.__local_val_ctrl_counter][1])
+        elif self.__local_val_ctrl_type == ENumDriveType.FILE_CONTROL_ALL:
             local_current_ctrl.throttle = float(self.__local_val_ctrl_array[self.__local_val_ctrl_counter][0])
             local_current_ctrl.steer = float(self.__local_val_ctrl_array[self.__local_val_ctrl_counter][1])
             local_current_ctrl.brake = float(self.__local_val_ctrl_array[self.__local_val_ctrl_counter][2])
@@ -67,9 +88,9 @@ class ClassVehicleUnit(object):
 
         # if file control ends, change type to static.
         if self.__local_val_ctrl_counter >= len(self.__local_val_ctrl_array):
-            self.__local_val_ctrl_type = GLOBAL_CONSTANT_DRIVE_TYPE_STATIC
+            self.__local_val_ctrl_type = ENumDriveType.STATIC
 
-        return local_current_ctrl
+        return local_current_ctrl, local_current_light
 
     def function_destroy(self):
         local_val_command_batch = []
@@ -93,9 +114,9 @@ class ClassVehicleUnit(object):
         local_val_command_batch = []
         local_val_command_set_autopilot = carla.command.SetAutopilot
 
-        if self.__local_val_ctrl_type == GLOBAL_CONSTANT_DRIVE_TYPE_AUTOPILOT:
+        if self.__local_val_ctrl_type == ENumDriveType.AUTOPILOT:
             local_val_command_batch.append(local_val_command_set_autopilot(self.__local_val_actor, True))
-        elif self.__local_val_ctrl_type == GLOBAL_CONSTANT_DRIVE_TYPE_FILE_CONTROL_STEER:
+        elif self.__local_val_ctrl_type == ENumDriveType.FILE_CONTROL_STEER:
             self.__local_val_actor.enable_constant_velocity(self.__local_val_constant_velocity)
 
         return local_val_command_batch
@@ -107,15 +128,21 @@ class ClassVehicleUnit(object):
         :return: carla.command batch
         """
         local_val_command_batch = []
-        local_val_command_apply_control = carla.command.ApplyVehicleControl
-        if self.__local_val_ctrl_type == GLOBAL_CONSTANT_DRIVE_TYPE_STATIC:
+        if self.__local_val_ctrl_type == ENumDriveType.STATIC:
             self.__local_val_actor.enable_constant_velocity(carla.Vector3D(0.0, 0.0, 0.0))
-        elif self.__local_val_ctrl_type == GLOBAL_CONSTANT_DRIVE_TYPE_FILE_CONTROL_STEER:
-            local_val_command_batch.append(local_val_command_apply_control(self.__local_val_actor,
-                                                                           self._function_get_ctrl()))
-        elif self.__local_val_ctrl_type == GLOBAL_CONSTANT_DRIVE_TYPE_FILE_CONTROL_ALL:
-            local_val_command_batch.append(local_val_command_apply_control(self.__local_val_actor,
-                                                                           self._function_get_ctrl()))
+        elif self.__local_val_ctrl_type in [ENumDriveType.FILE_CONTROL_STEER,
+                                            ENumDriveType.FILE_CONTROL_ALL]:
+            local_current_ctrl, local_current_light = self._function_get_ctrl()
+            local_val_command_batch.append(carla.command.ApplyVehicleControl(self.__local_val_actor,
+                                                                           local_current_ctrl))
+            local_val_command_batch.append(carla.command.SetVehicleLightState(self.__local_val_actor,
+                                                                              local_current_light))
+        elif self.__local_val_ctrl_type == ENumDriveType.FILE_CONTROL_TRANSFORM:
+            local_current_transform, local_current_light = self._funticon_get_transform()
+            local_val_command_batch.append(carla.command.ApplyTransform(self.__local_val_actor,
+                                                                           local_current_transform))
+            local_val_command_batch.append(carla.command.SetVehicleLightState(self.__local_val_actor,
+                                                                              local_current_light))
         return local_val_command_batch
 
 
@@ -186,12 +213,14 @@ class ClassVehicleManager(object):
             # get control array and constant velocity
             local_val_control_array = None
             local_val_constant_velocity = None
-            if local_val_vehicle_config['drive_type'] == GLOBAL_CONSTANT_DRIVE_TYPE_FILE_CONTROL_STEER:
+            if local_val_vehicle_config['drive_type'] == ENumDriveType.FILE_CONTROL_STEER:
                 local_val_control_array = np.load(local_val_vehicle_config['drive_file'])
                 local_val_constant_velocity = carla.Vector3D(x=local_val_vehicle_config['constant_velocity'][0],
                                                              y=local_val_vehicle_config['constant_velocity'][1],
                                                              z=local_val_vehicle_config['constant_velocity'][2])
-            elif local_val_vehicle_config['drive_type'] == GLOBAL_CONSTANT_DRIVE_TYPE_FILE_CONTROL_ALL:
+            elif local_val_vehicle_config['drive_type'] == ENumDriveType.FILE_CONTROL_ALL:
+                local_val_control_array = np.load(local_val_vehicle_config['drive_file'])
+            elif local_val_vehicle_config['drive_type'] == ENumDriveType.FILE_CONTROL_TRANSFORM:
                 local_val_control_array = np.load(local_val_vehicle_config['drive_file'])
 
             # add to vehicle list

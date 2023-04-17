@@ -9,11 +9,11 @@ from func_timeout import func_set_timeout
 import func_timeout
 
 # import global vehicle manager to find vehicle
-from .module_vehicle_manager import instance_var_vehicle_manager as global_var_vehicle_manager
+from .package_vehicle import instance_var_vehicle_manager as global_var_vehicle_manager
 from .module_spectator_manager import instance_var_spectator_manager as global_var_spectator_manager
 
 from .module_signal_control import function_get_global_signal
-from .module_sensor_enum import EnumAttachType 
+from .module_sensor_enum import ENumAttachType 
 
 __all__ = ['instance_var_sensor_manager']
 
@@ -284,10 +284,10 @@ class ClassSensorManager(object):
             local_val_blueprint.set_attribute('sensor_tick', '0.0')
 
         # attach actor
-        if parameter_sensor_config['attach_type'] == EnumAttachType.VEHICLE:
+        if parameter_sensor_config['attach_type'] == ENumAttachType.VEHICLE:
             local_val_attach = global_var_vehicle_manager.function_get_vehicle_by_role_name(
                 parameter_sensor_config['attach_name'])
-        elif parameter_sensor_config['attach_type'] == EnumAttachType.SPECTATOR:
+        elif parameter_sensor_config['attach_type'] == ENumAttachType.SPECTATOR:
             local_val_attach = global_var_spectator_manager.function_get_spectator()
 
         # attach spawn point transform
