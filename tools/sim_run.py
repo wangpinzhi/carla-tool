@@ -111,7 +111,7 @@ def producer(transQ:JoinableQueue, args):
                     data_pre_time += (time.time()-start_time)
 
                     if 'ph_rgb' in s_name:
-                        transQ.put((os.path.join(args.save_data_path,'pinhole','{}_{}.png'.format(s_name, cur_frame)), data_array))
+                        transQ.put((os.path.join(args.save_data_path,'pinhole','{}_{}.jpg'.format(s_name, cur_frame)), data_array))
                     elif 'ph_depth' in s_name:
                         transQ.put((os.path.join(args.save_data_path,'pinhole','{}_{}.npz'.format(s_name, cur_frame)), data_array))
                     elif 'cm_rgb' in s_name:
