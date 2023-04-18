@@ -265,9 +265,7 @@ class ClassVehicleManager(object):
     def function_flush_vehicles(self,
                                 parameter_client: carla.Client):
         """
-
         This function must be used when sync mode is on.
-        This function will tick the world automatically.
 
         :return:
         """

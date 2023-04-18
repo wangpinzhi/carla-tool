@@ -18,7 +18,7 @@ from .module_weather_control import function_set_weather
 from .package_vehicle import instance_var_vehicle_manager as global_var_vehicle_manager
 
 # import global sensor manager to control sensors
-from .module_sensor_manager import instance_var_sensor_manager as global_val_sensor_manager
+from .package_sensor import instance_var_sensor_manager as global_val_sensor_manager
 
 # import global sensor manager to control spectator
 from .module_spectator_manager import instance_var_spectator_manager as global_val_spectator_manager

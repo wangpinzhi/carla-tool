@@ -9,10 +9,10 @@ from func_timeout import func_set_timeout
 import func_timeout
 
 # import global vehicle manager to find vehicle
-from .package_vehicle import instance_var_vehicle_manager as global_var_vehicle_manager
-from .module_spectator_manager import instance_var_spectator_manager as global_var_spectator_manager
+from ..package_vehicle import instance_var_vehicle_manager as global_var_vehicle_manager
+from ..module_spectator_manager import instance_var_spectator_manager as global_var_spectator_manager
 
-from .module_signal_control import function_get_global_signal
+from ..module_signal_control import function_get_global_signal
 from .module_sensor_enum import ENumAttachType 
 
 __all__ = ['instance_var_sensor_manager']
