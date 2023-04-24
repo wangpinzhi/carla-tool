@@ -1302,7 +1302,12 @@ class CameraManager(object):
                     bp.set_attribute(attr_name, attr_value)
                     if attr_name == 'range':
                         self.lidar_range = float(attr_value)
-
+            if item[0].startswith('sensor.camera.rgb'):
+                image_w = bp.get_attribute("image_size_x").as_int()
+                image_h = bp.get_attribute("image_size_y").as_int()
+                fov = bp.get_attribute("fov").as_float()
+                focal = image_w / (2.0 * np.tan(fov * np.pi / 360.0))
+                self.K_parameter = [image_w, image_h, fov, focal]
             item.append(bp)
         self.index = None
 
@@ -1342,6 +1347,22 @@ class CameraManager(object):
     def render(self, display):
         if self.surface is not None:
             display.blit(self.surface, (0, 0))
+
+    def get_image_point(self, loc):
+        K = np.identity(3)
+        K[0, 0] = K[1, 1] = self.K_parameter[3]
+        K[0, 2] = self.K_parameter[0] / 2.0
+        K[1, 2] = self.K_parameter[1] / 2.0
+
+        world_2_camera = np.array(self.sensor.get_transform().get_inverse_matrix())
+
+        point = np.array([loc.x, loc.y, loc.z, 1])
+        point_camera = np.dot(world_2_camera, point)
+        point_camera = [point_camera[1], -point_camera[2], point_camera[0]]
+        point_img = np.dot(K, point_camera)
+        point_img[0] /= point_img[2]
+        point_img[1] /= point_img[2]
+        return point_img[0:2]
 
     @staticmethod
     def _parse_image(weak_self, image):
@@ -1387,7 +1408,32 @@ class CameraManager(object):
         if self.recording:
             image.save_to_disk('_out/%08d' % image.frame)
             self.recording = not self.recording
-            if self.index == 1:
+            if self.index == 0:
+                array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
+                array = np.reshape(array, (image.height, image.width, 4))
+                world = self._parent.get_world()
+                for npc in world.get_actors().filter('*vehicle*'):
+                    if npc.id != self._parent.id:
+
+                        bb = npc.bounding_box
+                        dist = npc.get_transform().location.distance(self._parent.get_transform().location)
+
+                        if dist < 50:
+                            forward_vec = self._parent.get_transform().get_forward_vector()
+                            ray = npc.get_transform().location - self._parent.get_transform().location
+
+                            if forward_vec.dot(ray) > 1:
+                                p1 = self.get_image_point(bb.location)
+                                verts = [v for v in bb.get_world_vertices(npc.get_transform())]
+                                edges = [[0, 1], [1, 3], [3, 2], [2, 0], [0, 4], [4, 5], [5, 1], [5, 7], [7, 6], [6, 4],
+                                         [6, 2], [7, 3]]
+                                for edge in edges:
+                                    p1 = self.get_image_point(verts[edge[0]])
+                                    p2 = self.get_image_point(verts[edge[1]])
+                                    cv2.line(array, (int(p1[0]), int(p1[1])), (int(p2[0]), int(p2[1])), (255, 0, 0, 255),
+                                             1)
+                cv2.imwrite(os.path.join('_out', 'new%08d.png' % image.frame), array)
+            elif self.index == 1:
                 array = np.frombuffer(image.raw_data, dtype=np.dtype("uint8"))
                 array = np.reshape(array, (image.height, image.width, 4))
                 array = array[:, :, :3]
