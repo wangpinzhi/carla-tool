@@ -10,10 +10,10 @@ echo "SCENE is %SCENE%"
 echo "NUM_WORKERS is %NUM_WORKERS%"
 
 if "%VERSION%" == "huawei" (
-    echo "start collecting part5, json file is output/%VERSION%_%SCENE%/%VERSION%_%SCENE%_part6.json"
+    echo "start collecting part5, json file is output/%VERSION%_%SCENE%/%VERSION%_%SCENE%_part5.json"
     python tools/sim_run.py     --save_data_path "output/%VERSION%_%SCENE%"^
                                 --num_workers %NUM_WORKERS%^
-                                --config_path "output/%VERSION%_%SCENE%/%VERSION%_%SCENE%_part6.json"
+                                --config_path "output/%VERSION%_%SCENE%/%VERSION%_%SCENE%_part5.json"
 )
 
 

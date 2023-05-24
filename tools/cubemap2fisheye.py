@@ -8,10 +8,11 @@ import numpy as np
 from tqdm import tqdm
 from scipy.spatial.transform import Rotation as R
 import sys
+from PIL import Image
 import os
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 sys.path.insert(0, parent_path)
-
+import math
 
 class Cubemap2Fisheye:
     def __init__(self, fish_h, fish_w, fish_FoV, Rot=np.identity(3, dtype=np.float32), use_cuda=False):
@@ -171,7 +172,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
     c2f = Cubemap2Fisheye(args.outW, args.outW, args.fov, Rot=R.from_euler('zyx', [
                           args.r_z, args.r_y, args.r_x], degrees=True).as_matrix(), use_cuda=args.use_cuda)
-
+    cube_cos = np.zeros((args.cubeW,args.cubeW),dtype=np.float32)
+    D = (args.cubeW-1)/2
+    for i in range(args.cubeW):
+        for j in range(args.cubeW):
+            cube_cos[i][j] = math.sqrt(D*D/((i-D)*(i-D)+(j-D)*(j-D)+D*D))
+        
     # get frames
     frames = []
     regex = re.compile(r'(\d)+')
@@ -192,34 +198,53 @@ if __name__ == '__main__':
     pbar = tqdm(frames, desc=f'c2f {args.camera}', unit='frames')
 
     for frame in pbar:
+        
+        if 'depth' in args.camera:
+            # back - left - front - right - up - down
+            cube = np.zeros([6,1,args.cubeW,args.cubeW], dtype=np.float32)
+            for idx,view in [(0,'back'),(1,'left'),(2,'front'),(3,'right'),(4,'up'),(5,'down')]:
+                if args.format == 'npz':
+                    raw = np.load(f"{args.cubemap_dir}/{args.camera}_{view}_{frame}.{args.format}")['arr_0']
+                    # print(raw)
+                    # raw = cv2.imread(glob.glob(f"{args.cubemap_dir}/{args.camera}_{view}_{frame}.jpg")[0],-1)
+                raw = cv2.cvtColor(raw, cv2.COLOR_BGRA2RGB)
+                raw = raw.astype(np.float32)
+                raw = np.transpose(raw,(2,0,1))
+                normalized = (raw[0] + raw[1] * 256 + raw[2] * 256 * 256) / (256 * 256 * 256 - 1)
+                in_meters = 1000 * normalized
 
-        # back - left - front - right - up - down
-        # step 1 readcube
-        cube[0, :, :, :] = np.transpose(cv2.imread(
-            f"{args.cubemap_dir}/cm_{cam}_back_{frame}.{args.format}"), (2, 0, 1))
-        cube[1, :, :, :] = np.transpose(cv2.imread(
-            f"{args.cubemap_dir}/cm_{cam}_left_{frame}.{args.format}"), (2, 0, 1))
-        cube[2, :, :, :] = np.transpose(cv2.imread(
-            f"{args.cubemap_dir}/cm_{cam}_front_{frame}.{args.format}"), (2, 0, 1))
-        cube[3, :, :, :] = np.transpose(cv2.imread(
-            f"{args.cubemap_dir}/cm_{cam}_right_{frame}.{args.format}"), (2, 0, 1))
-        cube[4, :, :, :] = np.transpose(cv2.imread(
-            f"{args.cubemap_dir}/cm_{cam}_up_{frame}.{args.format}"), (2, 0, 1))
-        cube[5, :, :, :] = np.transpose(cv2.imread(
-            f"{args.cubemap_dir}/cm_{cam}_down_{frame}.{args.format}"), (2, 0, 1))
+                cube[idx][0] = in_meters/cube_cos
+                
+            out = c2f.trans(cube)
+            out = np.squeeze(out,axis=0)
 
-        # execute trans
-        start_time = time.time()
-        fish = c2f.trans(cube)
-        fish = fish.transpose((1, 2, 0))
-        fish.astype(np.uint8)
-        trans_img_time = time.time()-start_time
+            vis_color=cv2.applyColorMap(cv2.convertScaleAbs(out,alpha=255/50),cv2.COLORMAP_JET)
+            im=Image.fromarray(vis_color)
+                
+            im.save(os.path.join(args.output_dir, f'dpeth_vis_fe_{cam}_{frame}.jpg'))
+            np.savez(os.path.join(args.output_dir, f'fe_{cam}_{frame}.npz'), out.astype(np.float16))
+        else:
+            # back - left - front - right - up - down
+            # step 1 readcube
+            cube[0, :, :, :] = np.transpose(cv2.imread(
+                f"{args.cubemap_dir}/cm_{cam}_back_{frame}.{args.format}"), (2, 0, 1))
+            cube[1, :, :, :] = np.transpose(cv2.imread(
+                f"{args.cubemap_dir}/cm_{cam}_left_{frame}.{args.format}"), (2, 0, 1))
+            cube[2, :, :, :] = np.transpose(cv2.imread(
+                f"{args.cubemap_dir}/cm_{cam}_front_{frame}.{args.format}"), (2, 0, 1))
+            cube[3, :, :, :] = np.transpose(cv2.imread(
+                f"{args.cubemap_dir}/cm_{cam}_right_{frame}.{args.format}"), (2, 0, 1))
+            cube[4, :, :, :] = np.transpose(cv2.imread(
+                f"{args.cubemap_dir}/cm_{cam}_up_{frame}.{args.format}"), (2, 0, 1))
+            cube[5, :, :, :] = np.transpose(cv2.imread(
+                f"{args.cubemap_dir}/cm_{cam}_down_{frame}.{args.format}"), (2, 0, 1))
 
-        start_time = time.time()
-        cv2.imwrite(os.path.join(args.output_dir, f'fe_{cam}_{frame}.jpg'), fish, [
-                    int(cv2.IMWRITE_JPEG_QUALITY), 97])
-        save_img_time = time.time()-start_time
+            # execute trans
+            fish = c2f.trans(cube)
+            fish = fish.transpose((1, 2, 0))
+            fish.astype(np.uint8)
 
-        pbar.set_postfix(trans_cost=trans_img_time,
-                         save_cost=save_img_time,
-                         use_cuda=args.use_cuda)
+            start_time = time.time()
+            cv2.imwrite(os.path.join(args.output_dir, f'fe_{cam}_{frame}.jpg'), fish, [
+                        int(cv2.IMWRITE_JPEG_QUALITY), 97])
+ 
