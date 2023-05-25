@@ -283,8 +283,8 @@ class World(object):
                 print('Please add some Vehicle Spawn Point to your UE4 scene.')
                 sys.exit(1)
             spawn_points = self.map.get_spawn_points()
-            spawn_point = random.choice(spawn_points) if spawn_points else carla.Transform()
-            # spawn_point = carla.Transform(carla.Location(46.90, -173.40, 3.2))
+            # spawn_point = random.choice(spawn_points) if spawn_points else carla.Transform()
+            spawn_point = carla.Transform(carla.Location(36.30, 15.30, 5.5))
             self.player = self.world.try_spawn_actor(blueprint, spawn_point)
             if self.player is None:
                 print('spawn actor fails')
@@ -1352,6 +1352,7 @@ def game_loop(args):
     original_settings = None
 
     try:
+        transforms_np = None
         client = carla.Client(args.host, args.port)
         client.set_timeout(2000.0)
 
@@ -1387,9 +1388,9 @@ def game_loop(args):
             sim_world.wait_for_tick()
 
         clock = pygame.time.Clock()
-        transforms_np = None
+        
         while True:
-            clock.tick_busy_loop(20)
+            clock.tick_busy_loop(60)
             if controller.parse_events(client, world, clock, args.sync):
                 return
             world.tick(clock)

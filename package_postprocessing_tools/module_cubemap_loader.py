@@ -5,6 +5,7 @@ import torch
 
 from .module_cubemap_enum import EnumCamModel
 from .module_cubemap_enum import EnumTargetType
+from PIL import Image
 
 class ClassCubemapDataset(Dataset):
     def __init__(self, 
@@ -43,10 +44,11 @@ class ClassCubemapDataset(Dataset):
         local_val_save_name = self.__function_get_save_file(local_val_file)
         local_val_full_path = os.path.join(self.local_val_cubemap_dir, local_val_file)
         local_val_array = np.load(local_val_full_path)
-
+     
         local_val_cube = {}
         for local_val_view in self.local_val_order:
             local_val_cube_view = local_val_array[local_val_view] # H*W*C
+            Image.fromarray(local_val_cube_view).save('test.jpg')
             local_val_cube_view = local_val_cube_view.transpose(2, 0, 1) # 1*C*H*W
             local_val_cube_view = torch.from_numpy(local_val_cube_view)
             local_val_cube_view.requires_grad = False
