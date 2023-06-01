@@ -87,7 +87,7 @@ class ClassCubemapProcesser(object):
             local_val_y = local_val_ocam_xy[0, :].reshape((1,-1))
             local_val_rho = np.sqrt(local_val_x**2+local_val_y**2)
             local_val_z = np.polyval(local_val_ocam_poly, local_val_rho).reshape((1, -1))
-            local_val_alpha = np.arctan2(local_val_rho, local_val_z).reshape((self.local_val_target_height, self.local_val_target_width))
+            local_val_alpha = np.arctan2(local_val_rho, -local_val_z).reshape((self.local_val_target_height, self.local_val_target_width))
             local_val_beta = np.arctan2(-local_val_y, local_val_x).reshape((self.local_val_target_height, self.local_val_target_width))
             local_val_invalid_mask = local_val_alpha < 0
 
