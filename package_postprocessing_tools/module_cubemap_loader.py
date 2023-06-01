@@ -34,7 +34,7 @@ class ClassCubemapDataset(Dataset):
         if self.local_val_type == EnumTargetType['DEPTH']:
             local_val_save_name = local_val_save_name.split('.')[0] + '.npz'
         elif self.local_val_type == EnumTargetType['RGB']:
-            local_val_save_name = local_val_save_name.split('.')[0] + '.jpg'
+            local_val_save_name = local_val_save_name.split('.')[0] + '.png'
 
         return local_val_save_name
     

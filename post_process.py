@@ -12,7 +12,7 @@ from PIL import Image
 
 from package_postprocessing_tools import ClassCubemapProcesser
 from package_postprocessing_tools import ClassCubemapDataset
-from package_postprocessing_tools import vis_depth
+from package_postprocessing_tools import vis_depth, vis_invdepth
 from package_carla_manager import function_get_sensor_json_list
 from package_postprocessing_tools.module_cubemap_enum import EnumCamModel
 from package_postprocessing_tools.module_cubemap_enum import EnumTargetType
@@ -48,6 +48,7 @@ def main(args):
         target_width = sensor['post_process']['width']
         target_height = sensor['post_process']['height']
         target_type = sensor['post_process']['type']
+        target_append = sensor['post_process']['append']
         target_rot = None
         print('[Process {}] CamModel:{}, ImageH: {}, ImageW:{}, ImageFov:{}, ImageFormat:{}'.format(name_id,
                                                                                                     str(EnumCamModel(cam_model)),
@@ -59,9 +60,9 @@ def main(args):
         if cam_model == EnumCamModel['ERP']:
             subdir = 'erp'
         elif cam_model == EnumCamModel['FISHEYE']:
-            subdir = f'fisheye{target_fov}_new'
+            subdir = f'fisheye{target_fov}'
         elif cam_model == EnumCamModel['PINHOLE']:
-            subdir = f'pinhole_new'
+            subdir = f'pinhole'
          
         if 'rotation' in sensor['post_process'].keys():
             rot = sensor['post_process']['rotation']
@@ -89,6 +90,7 @@ def main(args):
             parameter_rot_matrix=target_rot,
             parameter_device=device,
             parameter_batchsize=args.batch_size,
+            parameter_append=target_append,
         )
 
         save_dir = os.path.join(args.save_dir, subdir)
@@ -101,7 +103,7 @@ def main(args):
                 raw_data = results[i].cpu().numpy()
                 if target_type == EnumTargetType['DEPTH']:
                     np.savez(os.path.join(save_dir,item['save_name'][i]), raw_data)
-                    color_depth = vis_depth(raw_data.squeeze(0))
+                    color_depth = vis_invdepth(1/raw_data.squeeze(0))
                     vis_save_name = item['save_name'][i][0:-4]+'.jpg'
                     color_depth.save(os.path.join(save_dir,vis_save_name))
                 elif target_type == EnumTargetType['RGB']:

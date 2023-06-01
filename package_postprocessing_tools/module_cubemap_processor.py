@@ -12,7 +12,8 @@ class ClassCubemapProcesser(object):
                  parameter_target_fov, # degree
                  parameter_rot_matrix=None, # rotation matrix
                  parameter_batchsize=1,
-                 parameter_device='cpu'):
+                 parameter_device='cpu',
+                 parameter_append:dict=None):
         self.local_val_rot_matrix = parameter_rot_matrix
         self.local_val_batchsize = parameter_batchsize
         self.local_val_target_model = parameter_target_model
@@ -20,6 +21,7 @@ class ClassCubemapProcesser(object):
         self.local_val_target_width  = parameter_target_width
         self.local_val_target_fov = parameter_target_fov
         self.local_val_device = parameter_device
+        self.local_val_append = parameter_append
         self.local_val_grids = self.__get_grids()
 
     def __transforms(self, 
@@ -66,6 +68,28 @@ class ClassCubemapProcesser(object):
             local_val_alpha = local_val_R / local_val_target_focal  # rad instead of degree
             local_val_beta = np.arctan2(local_val_Z, local_val_Y)
             local_val_invalid_mask = local_val_alpha > local_val_alpha_max
+        
+        elif self.local_val_target_model == EnumCamModel['OCAM']:
+            local_val_ocam_uc, local_val_ocam_vc = self.local_val_append['center']
+            local_val_ocam_c, local_val_ocam_d, local_val_ocam_e = self.local_val_append['affine']
+            local_val_ocam_poly = self.local_val_append['poly']
+            local_val_alpha_max =  np.deg2rad(self.local_val_target_fov) / 2
+            local_val_ocam_xs, local_val_ocam_ys = np.meshgrid(range(self.local_val_target_width), range(self.local_val_target_height))
+            local_val_ocam_u = local_val_ocam_ys.astype(np.float32).reshape((1,-1)) - local_val_ocam_uc
+            local_val_ocam_v = local_val_ocam_xs.astype(np.float32).reshape((1,-1)) - local_val_ocam_vc
+            # print(local_val_ocam_u.shape)
+            local_val_ocam_uv = np.concatenate((local_val_ocam_u, local_val_ocam_v), axis=0)
+            invdet = 1.0 / (local_val_ocam_c - local_val_ocam_d * local_val_ocam_e)
+            A_inv = invdet * np.array([[      1, -local_val_ocam_d], 
+                                       [-local_val_ocam_e,  local_val_ocam_c]], dtype=np.float32)
+            local_val_ocam_xy = A_inv.dot(local_val_ocam_uv)
+            local_val_x = local_val_ocam_xy[1, :].reshape((1,-1))
+            local_val_y = local_val_ocam_xy[0, :].reshape((1,-1))
+            local_val_rho = np.sqrt(local_val_x**2+local_val_y**2)
+            local_val_z = np.polyval(local_val_ocam_poly, local_val_rho).reshape((1, -1))
+            local_val_alpha = np.arctan2(local_val_rho, local_val_z).reshape((self.local_val_target_height, self.local_val_target_width))
+            local_val_beta = np.arctan2(-local_val_y, local_val_x).reshape((self.local_val_target_height, self.local_val_target_width))
+            local_val_invalid_mask = local_val_alpha < 0
 
         elif self.local_val_target_model == EnumCamModel['PINHOLE']: # pinhole model
             local_val_ph_focal = self.local_val_target_width / (2*np.tan(np.deg2rad(self.local_val_target_fov) / 2))
@@ -75,7 +99,7 @@ class ClassCubemapProcesser(object):
             local_val_invalid_mask = local_val_alpha < 0 
         
         elif self.local_val_target_model == EnumCamModel['ERP']: # erp model
-            local_val_unit = np.pi / self.local_val_target_height
+            local_val_unit = np.deg2rad(self.local_val_target_fov) / self.local_val_target_height
             local_val_theta = local_val_Y * local_val_unit
             local_val_phi =  local_val_Z * local_val_unit
             local_val_temp_z = np.sin(local_val_phi)
@@ -84,7 +108,7 @@ class ClassCubemapProcesser(object):
             local_val_r = np.sqrt(local_val_temp_x**2+local_val_temp_y**2+local_val_temp_z**2)
             local_val_alpha = np.arccos(local_val_temp_x/local_val_r)
             local_val_beta = np.arctan2(local_val_temp_z, local_val_temp_y)
-            local_val_invalid_mask = np.array(np.zeros_like(local_val_alpha), dtype=np.bool8)
+            local_val_invalid_mask = np.zeros_like(local_val_alpha).astype(bool)
         
         # transforms 
         if self.local_val_rot_matrix is not None:
