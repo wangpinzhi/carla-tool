@@ -319,7 +319,7 @@ class ClassSensorManager(object):
             local_val_blueprint, local_val_transform, local_val_attach = self._function_get_spawn(
                 local_val_sensor_config,
                 local_val_blueprint_library)
-
+            print(local_val_attach)
             local_val_actor = local_val_world.spawn_actor(local_val_blueprint,
                                                           local_val_transform,
                                                           local_val_attach)

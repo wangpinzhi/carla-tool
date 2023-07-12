@@ -56,6 +56,9 @@ def function_get_sepctator_json(parameter_file_path: str) -> dict:
     """
     with open(parameter_file_path) as f:
         local_val_spectator_config = json.load(f)['spectator']
+        if 'random_path' in local_val_spectator_config.keys():
+                local_val_spectator_config['random_path'] = os.path.join(os.path.dirname(parameter_file_path),
+                                                               local_val_spectator_config['random_path'])
     return local_val_spectator_config
 
 def function_get_sensor_json_list(parameter_file_path: str) -> list:

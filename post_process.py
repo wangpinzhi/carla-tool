@@ -103,7 +103,7 @@ def main(args):
                 raw_data = results[i].cpu().numpy()
                 if target_type == EnumTargetType['DEPTH']:
                     np.savez(os.path.join(save_dir,item['save_name'][i]), raw_data)
-                    color_depth = vis_invdepth(1/raw_data.squeeze(0))
+                    color_depth = vis_depth(1/raw_data.squeeze(0))
                     vis_save_name = item['save_name'][i][0:-4]+'.jpg'
                     color_depth.save(os.path.join(save_dir,vis_save_name))
                 elif target_type == EnumTargetType['RGB']:

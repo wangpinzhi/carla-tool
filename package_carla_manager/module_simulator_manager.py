@@ -109,7 +109,7 @@ class ClassSimulatorManager(object):
             self.local_val_world_settings = self.local_val_client.get_world().get_settings()
 
             # We set CARLA syncronous mode
-            self.local_val_world_settings.fixed_delta_seconds = 0.08
+            self.local_val_world_settings.fixed_delta_seconds = 0.085
             self.local_val_world_settings.synchronous_mode = True
             self.local_val_client.get_world().apply_settings(self.local_val_world_settings)
 
@@ -122,6 +122,7 @@ class ClassSimulatorManager(object):
                 self.local_val_client.get_world().tick()
                 local_val_counter += 1
             
+            global_val_spectator_manager.function_reset_counter()
             global_val_sensor_manager.function_start_sensors()
             global_val_sensor_manager.function_listen_sensors()
 
@@ -129,6 +130,7 @@ class ClassSimulatorManager(object):
                 pbar.set_description(f'Processing')
                 while (not function_get_global_signal()) and (local_val_frame_start <= local_val_frame_end):
                     # flush vehicle state
+                    global_val_spectator_manager.function_flush_state()
                     global_var_vehicle_manager.function_flush_vehicles(self.local_val_client)
                     self.local_val_client.get_world().tick()  # tick the world
                     if global_val_sensor_manager.function_sync_sensors():  # check sensor data receive ready or not

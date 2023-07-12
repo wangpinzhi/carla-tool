@@ -17,6 +17,7 @@ def function_set_map(parameter_client: carla.Client,
 
     # load new map
     if parameter_map['name'] != local_current_map:
+        # print(local_current_map)
         parameter_client.load_world(parameter_map['name'])
 
     # print info

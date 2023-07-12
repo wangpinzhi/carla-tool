@@ -48,7 +48,6 @@ class ClassCubemapDataset(Dataset):
         local_val_cube = {}
         for local_val_view in self.local_val_order:
             local_val_cube_view = local_val_array[local_val_view] # H*W*C
-            Image.fromarray(local_val_cube_view).save('test.jpg')
             local_val_cube_view = local_val_cube_view.transpose(2, 0, 1) # 1*C*H*W
             local_val_cube_view = torch.from_numpy(local_val_cube_view)
             local_val_cube_view.requires_grad = False
