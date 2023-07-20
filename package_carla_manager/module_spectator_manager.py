@@ -4,6 +4,7 @@ import random
 
 GLOBAL_CONSTANT_SPECTATOR_CTRL_TYPE_STATIC = 0
 GLOBAL_CONSTANT_SPECTATOR_CTRL_TYPE_RANDOM = 1
+GLOBAL_CONSTANT_SPECTATOR_CTRL_TYPE_ORDER = 2
 
 class ClassSpectatorManager(object):
     def __init__(self) -> None:
@@ -26,6 +27,7 @@ class ClassSpectatorManager(object):
             self.local_val_random_rot = self.local_raw_data['random_rot']
             self.local_val_random_pos = self.local_raw_data['random_pos']
             self.local_val_data = self.local_raw_data['data']
+            self.local_val_total_idx_num = self.local_raw_data['random_idx'].size(0)
 
         if 'transform' in parameter_config.keys():
             local_val_transform = carla.Transform(carla.Location(parameter_config['transform'][0],
@@ -50,7 +52,7 @@ class ClassSpectatorManager(object):
                                                   roll=float(self.local_val_data[local_val_random_idx][5])+float(self.local_val_random_rot[self.local_val_counter][2]))
 
             self.__local_val_spectator.set_transform(carla.Transform(local_val_random_loc, local_val_random_rot))
-            self.local_val_counter = (self.local_val_counter+1)%1024
+            self.local_val_counter = (self.local_val_counter+1)%(self.local_val_total_idx_num)
 
     def function_get_spectator(self):
         return self.__local_val_spectator
