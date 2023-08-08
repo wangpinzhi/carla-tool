@@ -57,8 +57,7 @@ class ClassSensorUnit(Thread):
 
                 # convert raw data to numpy array
                 local_val_data_array = np.frombuffer(local_val_data.raw_data, dtype=np.dtype("uint8"))
-                local_val_data_array = np.reshape(local_val_data_array,
-                                                    (local_val_data.height, local_val_data.width, 4))
+                local_val_data_array = np.reshape(local_val_data_array, (local_val_data.height, local_val_data.width, 4))
                 local_val_data_array = local_val_data_array[:, :, :3]
 
                 np.savez(

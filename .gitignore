@@ -7,3 +7,5 @@ __pycache__
 .idea
 .vscode
 test.py
+temp
+temp.txt
