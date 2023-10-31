@@ -29,6 +29,8 @@ class ClassCubemapDataset(Dataset):
             local_val_save_name = local_val_save_name.replace('cm', 'fe')
         elif self.local_val_model == EnumCamModel['ERP']:
             local_val_save_name = local_val_save_name.replace('cm', 'erp')
+        elif self.local_val_model == EnumCamModel['OCAM']:
+            local_val_save_name = local_val_save_name.replace('cm', 'ocam')
         
         # get save format
         if self.local_val_type == EnumTargetType['DEPTH']:

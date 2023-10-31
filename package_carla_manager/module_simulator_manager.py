@@ -4,6 +4,8 @@ import carla
 import random
 from tqdm import tqdm
 import sys
+import keyboard
+import socket
 
 # read configs from json file.
 from .module_file_reader import function_get_map_json, function_get_weather_json
@@ -42,6 +44,13 @@ class ClassSimulatorManager(object):
         :param parameter_path_scene: path to scene_config.json
         :param parameter_path_sensor: path to sensor_config.json
         """
+
+        self.local_val_tcp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.local_val_tcp_server_socket.setblocking(True)
+        self.local_val_tcp_server_socket.bind(("127.0.0.1", 6666))
+        self.local_val_tcp_server_socket.listen(128)
+        self.local_val_client_socket, _ = self.local_val_tcp_server_socket.accept()
+
         self.local_val_save_path = parameter_path_save
         self.local_val_world_settings = None
         self.local_val_origin_world_settings = None
@@ -87,6 +96,11 @@ class ClassSimulatorManager(object):
                                parameter_sensor_config):
         local_val_counter = 0
         try:
+            
+            self.local_val_client_socket.send("reset".encode())
+            time.sleep(0.05)
+            self.local_val_client_socket.send("flush".encode())
+            time.sleep(0.05)
 
             # get save setting
             local_val_save_config = function_get_save_json(self.local_val_sensor_config_path)
@@ -109,7 +123,10 @@ class ClassSimulatorManager(object):
             self.local_val_world_settings = self.local_val_client.get_world().get_settings()
 
             # We set CARLA syncronous mode
-            self.local_val_world_settings.fixed_delta_seconds = 0.085
+            self.local_val_world_settings.fixed_delta_seconds = 0.14
+            self.local_val_world_settings.max_substep_delta_time = 0.01
+            self.local_val_world_settings.max_substeps = 15
+            self.local_val_world_settings.substepping = True
             self.local_val_world_settings.synchronous_mode = True
             self.local_val_client.get_world().apply_settings(self.local_val_world_settings)
 
@@ -119,25 +136,29 @@ class ClassSimulatorManager(object):
             print('\033[1;35m Sikp Unused Frames\033[0m')
             while local_val_counter < local_val_frame_start:
                 global_var_vehicle_manager.function_flush_vehicles(self.local_val_client) # flush
+                self.local_val_client_socket.send("flush".encode())
                 self.local_val_client.get_world().tick()
                 local_val_counter += 1
-            
+                
             global_val_spectator_manager.function_reset_counter()
             global_val_sensor_manager.function_start_sensors()
             global_val_sensor_manager.function_listen_sensors()
 
             with tqdm(total=local_val_frame_num, unit='frame', leave=True, colour='blue') as pbar:
                 pbar.set_description(f'Processing')
+                
                 while (not function_get_global_signal()) and (local_val_frame_start <= local_val_frame_end):
                     # flush vehicle state
                     global_val_spectator_manager.function_flush_state()
                     global_var_vehicle_manager.function_flush_vehicles(self.local_val_client)
+                    self.local_val_client_socket.send("flush".encode())
+                    time.sleep(0.2)
                     self.local_val_client.get_world().tick()  # tick the world
                     if global_val_sensor_manager.function_sync_sensors():  # check sensor data receive ready or not
                         local_val_frame_start += 1
-                        pbar.update(1)
+                        pbar.update(1)           
                     else:
-                        raise Exception('funciton_sync_sensors error')
+                        raise Exception('funciton_sync_sensors error') 
         finally:
             
             #  # ctrl c capture
@@ -169,9 +190,7 @@ class ClassSimulatorManager(object):
             if function_get_global_signal():
                 print('\033[1;31m[Receive Exit Signal] Exit Main Process Bye!\033[0m')
                 sys.exit()
-
             
-
     def function_start_sim_collect(self,
                                    parameter_split_num: int = 4):
         
@@ -182,7 +201,10 @@ class ClassSimulatorManager(object):
         print('\033[1;32m[Split Sensors Num]:\033[0m', '    ',
               f'\033[1;33m{parameter_split_num}\033[0m')
         
-        local_val_item_nums = int(len(local_val_sensor_configs) / parameter_split_num) + 1
+        if len(local_val_sensor_configs) > parameter_split_num:
+            local_val_item_nums = int(len(local_val_sensor_configs) / parameter_split_num)
+        else:
+            local_val_item_nums = len(local_val_sensor_configs)
 
         print('\033[1;35m------------------------------------COLLECT START------------------------------------------------\033[0m')
         for i in range(parameter_split_num):
@@ -195,6 +217,7 @@ class ClassSimulatorManager(object):
                 self._function_sim_one_step(local_val_part)
                 gc.collect()
                 time.sleep(3.0)
+                   
         print('\033[1;35m------------------------------------COLLECT END-------------------------------------------------\033[0m')
 
 

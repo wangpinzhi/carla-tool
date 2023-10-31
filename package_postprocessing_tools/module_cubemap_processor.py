@@ -73,7 +73,8 @@ class ClassCubemapProcesser(object):
         elif self.local_val_target_model == EnumCamModel['OCAM']:
             local_val_ocam_uc, local_val_ocam_vc = self.local_val_append['center']
             local_val_ocam_c, local_val_ocam_d, local_val_ocam_e = self.local_val_append['affine']
-            local_val_ocam_poly = self.local_val_append['poly']
+            local_val_ocam_poly = self.local_val_append['poly'][::-1]
+            # print(local_val_ocam_poly)
             local_val_alpha_max =  np.deg2rad(self.local_val_target_fov) / 2
             local_val_ocam_xs, local_val_ocam_ys = np.meshgrid(range(self.local_val_target_width), range(self.local_val_target_height))
             local_val_ocam_u = local_val_ocam_ys.astype(np.float32).reshape((1,-1)) - local_val_ocam_uc
@@ -88,6 +89,7 @@ class ClassCubemapProcesser(object):
             local_val_y = local_val_ocam_xy[0, :].reshape((1,-1))
             local_val_rho = np.sqrt(local_val_x**2+local_val_y**2)
             local_val_z = np.polyval(local_val_ocam_poly, local_val_rho).reshape((1, -1))
+            
             local_val_alpha = np.arctan2(local_val_rho, local_val_z).reshape((self.local_val_target_height, self.local_val_target_width))
             local_val_beta = np.arctan2(-local_val_y, local_val_x).reshape((self.local_val_target_height, self.local_val_target_width))
             local_val_invalid_mask = local_val_alpha < 0
@@ -100,7 +102,7 @@ class ClassCubemapProcesser(object):
             local_val_invalid_mask = local_val_alpha < 0 
         
         elif self.local_val_target_model == EnumCamModel['ERP']: # erp model
-            local_val_unit = np.deg2rad(self.local_val_target_fov) / self.local_val_target_height
+            local_val_unit = np.deg2rad(self.local_val_target_fov) / self.local_val_target_width
             local_val_theta = local_val_Y * local_val_unit
             local_val_phi =  local_val_Z * local_val_unit
             local_val_temp_z = np.sin(local_val_phi)
@@ -123,6 +125,7 @@ class ClassCubemapProcesser(object):
         local_val_front_Z[local_val_front_mask] = -2.
         local_val_front_grid = np.dstack((local_val_front_Y, local_val_front_Z))
         local_val_front_grid = np.expand_dims(local_val_front_grid, axis=0)
+        
         local_val_target_grids['front_data'] = torch.from_numpy(local_val_front_grid).to(self.local_val_device)
         local_val_target_grids['front_data'].requires_grad = False
 

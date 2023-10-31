@@ -35,7 +35,7 @@ class ClassSensorUnit(Thread):
     def function_get_save_queue(self):
         return self.__local_val_save_queue
 
-    def function_get__life_counter(self):
+    def function_get_life_counter(self):
         return self.__local_val_life_counter
 
     def run(self) -> None:
@@ -130,7 +130,7 @@ class ClassCubeSensorUnit(Thread):
     def function_get_save_queue(self):
         return self.__local_val_save_queue
 
-    def function_get__life_counter(self):
+    def function_get_life_counter(self):
         return self.__local_val_life_counter
 
     def run(self) -> None:
@@ -390,12 +390,12 @@ class ClassSensorManager(object):
 def function_cube_sensor_callback(parameter_data: carla.SensorData,
                                   parameter_name: str,
                                   parameter_cube_sensor: ClassCubeSensorUnit):
-    if (not function_get_global_signal()) and parameter_cube_sensor.function_get__life_counter() != 0:
+    if (not function_get_global_signal()) and parameter_cube_sensor.function_get_life_counter() != 0:
         parameter_cube_sensor.function_get_save_queue().put((parameter_name, parameter_data))
 
 def function_sensor_callback(parameter_data: carla.SensorData,
                              parameter_sensor: ClassSensorUnit):
-    if (not function_get_global_signal()) and parameter_sensor.function_get__life_counter() != 0:
+    if (not function_get_global_signal()) and parameter_sensor.function_get_life_counter() != 0:
         parameter_sensor.function_get_save_queue().put(parameter_data)
 
 
