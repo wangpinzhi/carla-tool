@@ -113,6 +113,18 @@ class ClassCubemapProcesser(object):
             local_val_beta = np.arctan2(local_val_temp_z, local_val_temp_y)
             local_val_invalid_mask = np.zeros_like(local_val_alpha).astype(bool)
         
+        elif self.local_val_target_model == EnumCamModel['CASSINI']:
+            local_val_unit = np.deg2rad(self.local_val_target_fov) / self.local_val_target_height
+            local_val_theta = local_val_Y * local_val_unit
+            local_val_phi =  local_val_Z * local_val_unit
+            local_val_temp_x = np.cos(local_val_theta)*np.cos(local_val_phi)
+            local_val_temp_y = np.sin(local_val_theta)
+            local_val_temp_z = np.cos(local_val_theta)*np.sin(local_val_phi)
+            local_val_r = np.sqrt(local_val_temp_x**2+local_val_temp_y**2+local_val_temp_z**2)
+            local_val_alpha = np.arccos(local_val_temp_x/local_val_r)
+            local_val_beta = np.arctan2(local_val_temp_z, local_val_temp_y)
+            local_val_invalid_mask = np.zeros_like(local_val_alpha).astype(bool)
+        
         # transforms 
         if self.local_val_rot_matrix is not None:
             local_val_alpha, local_val_beta = self.__transforms(local_val_alpha, local_val_beta)

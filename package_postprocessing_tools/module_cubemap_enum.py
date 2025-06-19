@@ -6,6 +6,7 @@ class EnumCamModel(IntEnum):
     FISHEYE = 1
     ERP = 2
     OCAM = 3
+    CASSINI = 4
 
 @unique
 class EnumTargetType(IntEnum):

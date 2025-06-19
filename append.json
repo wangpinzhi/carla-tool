@@ -1,0 +1,37 @@
+{
+  "sensors": [
+    {
+      "name_id": "cm_rgb0",
+      "post_process":{
+        "cam_model":4, "width":640, "height":1280, "fov":360, "type":1, "append": null,
+        "rotation": {
+          "seq": "z",
+          "angles": [30.0],
+          "degrees": true
+        }
+      }
+    },
+    {
+      "name_id": "cm_rgb6",
+      "post_process":{
+        "cam_model":4, "width":640, "height":1280, "fov":360, "type":1, "append": null,
+        "rotation": {
+          "seq": "z",
+          "angles": [90.0],
+          "degrees": true
+        }
+      }
+    },
+    {
+      "name_id": "cm_depth0",
+      "post_process":{
+        "cam_model":4, "width":640, "height":1280, "fov":360, "type":0, "append": null,
+        "rotation": {
+          "seq": "z",
+          "angles": [30.0],
+          "degrees": true
+        }
+      }
+    }
+  ]
+}

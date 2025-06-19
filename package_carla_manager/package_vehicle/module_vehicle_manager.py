@@ -70,7 +70,7 @@ class ClassVehicleUnit(object):
         # flush the control
         local_current_ctrl = self.__local_val_actor.get_control()
         local_current_light = 0
-        if len(self.__local_val_ctrl_array[self.__local_val_ctrl_counter]==8):
+        if len(self.__local_val_ctrl_array[self.__local_val_ctrl_counter])==8:
             local_current_light = int(self.__local_val_ctrl_array[self.__local_val_ctrl_counter][7])
         if self.__local_val_ctrl_type == ENumDriveType.FILE_CONTROL_STEER:  # Only affect steer
             local_current_ctrl.steer = float(self.__local_val_ctrl_array[self.__local_val_ctrl_counter][1])

@@ -31,7 +31,7 @@ def get_args():
                         help='Specify post-processing scenarios.')
     parser.add_argument('--raw_data_dir', type=str, 
                         help='path of the scenario raw data.')
-    parser.add_argument('--save_dir', type=str)
+    parser.add_argument('--save_dir', type=str,default='D:/heterogenenous-data-carla-main/output/indoor_4fisheye_gym/post_data/parking180')
     return parser.parse_args()
 
 def main(args):
@@ -65,6 +65,8 @@ def main(args):
             subdir = f'pinhole'
         elif cam_model == EnumCamModel['OCAM']:
             subdir = f'ocam'
+        elif cam_model == EnumCamModel['CASSINI']:
+            subdir = f'cassini'
          
         if 'rotation' in sensor['post_process'].keys():
             rot = sensor['post_process']['rotation']

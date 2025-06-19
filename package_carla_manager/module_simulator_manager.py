@@ -50,6 +50,7 @@ class ClassSimulatorManager(object):
         self.local_val_tcp_server_socket.bind(("127.0.0.1", 6666))
         self.local_val_tcp_server_socket.listen(128)
         self.local_val_client_socket, _ = self.local_val_tcp_server_socket.accept()
+        print('SOCKET')
 
         self.local_val_save_path = parameter_path_save
         self.local_val_world_settings = None
@@ -99,8 +100,8 @@ class ClassSimulatorManager(object):
             
             self.local_val_client_socket.send("reset".encode())
             time.sleep(0.05)
-            self.local_val_client_socket.send("flush".encode())
-            time.sleep(0.05)
+            # self.local_val_client_socket.send("flush".encode())
+            # time.sleep(0.05)
 
             # get save setting
             local_val_save_config = function_get_save_json(self.local_val_sensor_config_path)
@@ -123,8 +124,8 @@ class ClassSimulatorManager(object):
             self.local_val_world_settings = self.local_val_client.get_world().get_settings()
 
             # We set CARLA syncronous mode
-            self.local_val_world_settings.fixed_delta_seconds = 0.14
-            self.local_val_world_settings.max_substep_delta_time = 0.01
+            self.local_val_world_settings.fixed_delta_seconds = 0.05         # 0.14
+            self.local_val_world_settings.max_substep_delta_time = 0.01          # 0.01
             self.local_val_world_settings.max_substeps = 15
             self.local_val_world_settings.substepping = True
             self.local_val_world_settings.synchronous_mode = True
@@ -152,8 +153,9 @@ class ClassSimulatorManager(object):
                     global_val_spectator_manager.function_flush_state()
                     global_var_vehicle_manager.function_flush_vehicles(self.local_val_client)
                     self.local_val_client_socket.send("flush".encode())
-                    time.sleep(0.2)
+                    time.sleep(0.05)
                     self.local_val_client.get_world().tick()  # tick the world
+                    
                     if global_val_sensor_manager.function_sync_sensors():  # check sensor data receive ready or not
                         local_val_frame_start += 1
                         pbar.update(1)           
